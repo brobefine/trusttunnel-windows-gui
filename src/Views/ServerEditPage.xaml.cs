@@ -77,10 +77,4 @@ public sealed partial class ServerEditPage : Page
             n = n.Replace(c, '_');
         return string.IsNullOrWhiteSpace(n) ? "profile" : n;
     }
-
-    public ServerEditPage()
-    {
-        InitializeComponent();
-        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
-    }
 }
