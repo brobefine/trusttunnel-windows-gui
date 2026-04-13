@@ -39,14 +39,64 @@ jobs:
           -p:WindowsAppSDKSelfContained=true
           -p:PublishSingleFile=false
 
+      - name: Download trusttunnel_client (latest official release)
+        shell: pwsh
+        run: |
+          $arch = "${{ matrix.arch }}"
+          # GitHub API — последний релиз
+          $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/TrustTunnel/TrustTunnelClient/releases/latest" `
+                                   -Headers @{ "User-Agent" = "trusttunnel-gui-ci" }
+          Write-Host "Release tag: $($rel.tag_name)"
+          Write-Host "Available assets:"
+          $rel.assets | ForEach-Object { Write-Host "  $($_.name)" }
+
+          # Подбираем Windows-ассет нужной арки.
+          # Паттерны заведомо широкие — поправь, когда увидишь реальные имена.
+          $patterns = if ($arch -eq "x64") {
+            @("windows.*x86_64", "windows.*amd64", "win.*x64", "win64")
+          } else {
+            @("windows.*aarch64", "windows.*arm64", "win.*arm64")
+          }
+
+          $asset = $null
+          foreach ($p in $patterns) {
+            $asset = $rel.assets | Where-Object { $_.name -match $p } | Select-Object -First 1
+            if ($asset) { break }
+          }
+          if (-not $asset) {
+            Write-Error "No Windows $arch asset matched. Adjust patterns in workflow."
+            exit 1
+          }
+
+          Write-Host "Downloading $($asset.name)..."
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile "tt-client.archive"
+
+          # Распаковка zip или tar.gz
+          New-Item -ItemType Directory -Force -Path "tt-extract" | Out-Null
+          if ($asset.name -match "\.zip$") {
+            Expand-Archive -Path "tt-client.archive" -DestinationPath "tt-extract" -Force
+          } elseif ($asset.name -match "\.tar\.gz$|\.tgz$") {
+            tar -xzf "tt-client.archive" -C "tt-extract"
+          } else {
+            Write-Error "Unknown archive format: $($asset.name)"
+            exit 1
+          }
+
+          # Найти trusttunnel_client.exe внутри
+          $exe = Get-ChildItem -Path "tt-extract" -Recurse -Filter "trusttunnel_client.exe" | Select-Object -First 1
+          if (-not $exe) {
+            Write-Error "trusttunnel_client.exe not found in archive"
+            Get-ChildItem -Path "tt-extract" -Recurse | Select-Object FullName
+            exit 1
+          }
+          Copy-Item $exe.FullName -Destination "trusttunnel_client.exe" -Force
+
       - name: Download wintun.dll
         shell: pwsh
         run: |
-          $url = "https://www.wintun.net/builds/wintun-0.14.1.zip"
-          Invoke-WebRequest -Uri $url -OutFile wintun.zip
+          Invoke-WebRequest -Uri "https://www.wintun.net/builds/wintun-0.14.1.zip" -OutFile wintun.zip
           Expand-Archive -Path wintun.zip -DestinationPath wintun-extract -Force
-          $arch = "${{ matrix.arch }}"
-          if ($arch -eq "x64") { $sub = "amd64" } else { $sub = "arm64" }
+          $sub = if ("${{ matrix.arch }}" -eq "x64") { "amd64" } else { "arm64" }
           Copy-Item "wintun-extract/wintun/bin/$sub/wintun.dll" -Destination "wintun.dll"
 
       - name: Stage release
@@ -56,8 +106,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "release" | Out-Null
           Copy-Item "$pub/*" -Destination "release" -Recurse -Force
           Copy-Item "wintun.dll" -Destination "release/wintun.dll"
-          # Note: trusttunnel_client.exe must be added by end user or via release asset bundle
-          New-Item -ItemType File -Force -Path "release/PUT_trusttunnel_client.exe_HERE.txt" | Out-Null
+          Copy-Item "trusttunnel_client.exe" -Destination "release/trusttunnel_client.exe"
 
       - name: Zip
         shell: pwsh

@@ -10,6 +10,11 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Title = "TrustTunnel";
+
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+        AppWindow.SetIcon("Assets/app.ico");
+
         ContentFrame.Navigate(typeof(ConnectionPage));
         NavView.SelectedItem = NavView.MenuItems[0];
     }
