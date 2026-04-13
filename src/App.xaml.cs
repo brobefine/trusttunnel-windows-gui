@@ -61,7 +61,7 @@ public partial class App : Application
         {
             var path = Profiles.ConfigPathFor(Profiles.Active);
             ConfigService.Save(Profiles.Active, path);
-            Tunnel.Start(Binaries.ClientExePath, path);
+            _ = Tunnel.StartAsync(Binaries.ClientExePath, path);
         }
 
         // Показ окна (или скрытие в трей)

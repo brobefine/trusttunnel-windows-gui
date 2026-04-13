@@ -19,9 +19,32 @@
         </StackPanel>
 
         <Border Grid.Row="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="12">
-            <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                <TextBlock x:Name="LogBox" FontFamily="Consolas" FontSize="12" IsTextSelectionEnabled="True"/>
-            </ScrollViewer>
+            <ListView x:Name="LogList"
+                      SelectionMode="Extended"
+                      IsItemClickEnabled="False"
+                      ShowsScrollingPlaceholders="False"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.IsHorizontalScrollChainingEnabled="False"
+                      ScrollViewer.BringIntoViewOnFocusChange="False">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="MinHeight" Value="0"/>
+                        <Setter Property="Padding" Value="4,0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}"
+                                   FontFamily="Consolas"
+                                   FontSize="12"
+                                   IsTextSelectionEnabled="True"
+                                   TextWrapping="NoWrap"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
         </Border>
     </Grid>
 </Page>

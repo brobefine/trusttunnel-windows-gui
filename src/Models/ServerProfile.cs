@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.Linq;
 
 namespace TrustTunnelGui.Models;
 
@@ -48,10 +49,22 @@ public partial class ServerProfile : ObservableObject
     [ObservableProperty] private string socks5Username = "";
     [ObservableProperty] private string socks5Password = "";
 
-    public static List<string> SplitLines(string s) =>
-        string.IsNullOrWhiteSpace(s)
-            ? new List<string>()
-            : new List<string>(s.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries));
+    public static List<string> SplitLines(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return new List<string>();
+
+        var result = new List<string>();
+        var seen = new HashSet<string>();
+
+        foreach (var raw in s.Split(new[] { '\r', '\n', ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmed = raw.Trim();
+            if (trimmed.Length == 0) continue;
+            if (!seen.Add(trimmed)) continue;
+            result.Add(trimmed);
+        }
+        return result;
+    }
 
     public static List<int> SplitPorts(string s)
     {

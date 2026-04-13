@@ -81,12 +81,12 @@ public sealed partial class ConnectionPage : Page
         }
     }
 
-    private void Connect_Click(object sender, RoutedEventArgs e)
+    private async void Connect_Click(object sender, RoutedEventArgs e)
     {
         if (ProfileBox.SelectedItem is not ServerProfile p) return;
         var path = App.Profiles.ConfigPathFor(p);
         ConfigService.Save(p, path);
-        App.Tunnel.Start(App.Binaries.ClientExePath, path);
+        await App.Tunnel.StartAsync(App.Binaries.ClientExePath, path);
     }
 
     private async void Disconnect_Click(object sender, RoutedEventArgs e)
