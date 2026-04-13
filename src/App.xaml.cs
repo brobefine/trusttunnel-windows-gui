@@ -1,9 +1,8 @@
 using System;
 using H.NotifyIcon;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using CommunityToolkit.Mvvm.Input;
 using TrustTunnelGui.Services;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace TrustTunnelGui;
 
@@ -27,11 +26,7 @@ public partial class App : Application
 
         _trayIcon = new TaskbarIcon
         {
-            IconSource = new Microsoft.UI.Xaml.Controls.BitmapIconSource
-            {
-                UriSource = new Uri("ms-appx:///Assets/app.ico"),
-                ShowAsMonochrome = false
-            },
+            IconSource = new BitmapImage(new Uri("ms-appx:///Assets/app.ico")),
             ToolTipText = "TrustTunnel",
         };
 
