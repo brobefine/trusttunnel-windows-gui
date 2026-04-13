@@ -26,38 +26,37 @@ public partial class App : Application
     {
         MainWindow = new MainWindow();
 
+        // Контекстное меню трей-иконки
+        var menu = new MenuFlyout();
+
+        var showItem = new MenuFlyoutItem { Text = "Показать" };
+        showItem.Click += (_, _) => ShowWindow();
+        menu.Items.Add(showItem);
+
+        menu.Items.Add(new MenuFlyoutSeparator());
+
+        var exitItem = new MenuFlyoutItem { Text = "Выход" };
+        exitItem.Click += async (_, _) =>
+        {
+            await Tunnel.StopAsync();
+            _trayIcon?.Dispose();
+            Environment.Exit(0);
+        };
+        menu.Items.Add(exitItem);
+
+        // Трей-иконка
         _trayIcon = new TaskbarIcon
         {
             IconSource = new BitmapImage(new Uri("ms-appx:///Assets/app.ico")),
             ToolTipText = "TrustTunnel",
             NoLeftClickDelay = true,
             LeftClickCommand = new RelayCommand(ShowWindow),
+            ContextFlyout = menu,
+            ContextMenuMode = ContextMenuMode.SecondWindow,
         };
-
-        _trayIcon.RightClickCommand = new RelayCommand(() =>
-        {
-            var menu = new MenuFlyout();
-
-            var showItem = new MenuFlyoutItem { Text = "Показать" };
-            showItem.Click += (_, _) => ShowWindow();
-            menu.Items.Add(showItem);
-
-            menu.Items.Add(new MenuFlyoutSeparator());
-
-            var exitItem = new MenuFlyoutItem { Text = "Выход" };
-            exitItem.Click += async (_, _) =>
-            {
-                await Tunnel.StopAsync();
-                _trayIcon?.Dispose();
-                Environment.Exit(0);
-            };
-            menu.Items.Add(exitItem);
-
-            _trayIcon.ShowContextMenu(menu);
-        });
-
         _trayIcon.ForceCreate();
 
+        // Автоподключение при старте
         if (AutoStartService.AutoConnect && Profiles.Active != null)
         {
             var path = Profiles.ConfigPathFor(Profiles.Active);
@@ -65,17 +64,14 @@ public partial class App : Application
             Tunnel.Start(Binaries.ClientExePath, path);
         }
 
-        if (AutoStartService.StartHidden)
-        {
-            // окно не активируем
-        }
-        else
+        // Показ окна (или скрытие в трей)
+        if (!AutoStartService.StartHidden)
         {
             MainWindow.Activate();
         }
     }
 
-    void ShowWindow()
+    private void ShowWindow()
     {
         if (MainWindow == null) return;
         MainWindow.AppWindow.Show();
