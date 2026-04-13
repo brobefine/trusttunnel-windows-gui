@@ -2,171 +2,184 @@
 <Page
     x:Class="TrustTunnelGui.Views.ServerEditPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ScrollViewer>
-        <Grid Padding="32" RowSpacing="16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
 
-            <InfoBar x:Name="StatusBar" Grid.Row="0" IsClosable="True" IsOpen="False"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-            <Grid Grid.Row="1" ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="Редактирование сервера" FontSize="24" FontWeight="SemiBold"/>
-                <Button Grid.Column="1" Content="Экспорт TOML" Click="Export_Click"
-                        ToolTipService.ToolTip="Сохранить настройки этого профиля как .toml-файл (для бэкапа или ручного использования с CLI)."/>
-                <Button Grid.Column="2" Content="Сохранить" Click="Save_Click" Style="{ThemeResource AccentButtonStyle}"
-                        ToolTipService.ToolTip="Сохранить изменения профиля."/>
+        <InfoBar x:Name="StatusBar" Grid.Row="0" Margin="32,16,32,0"
+                 IsClosable="True" IsOpen="False"/>
+
+        <ScrollViewer Grid.Row="1"
+                      Background="Transparent"
+                      CanContentRenderOutsideBounds="False"
+                      UseLayoutRounding="True">
+            <Grid Padding="32,16,32,32" RowSpacing="16"
+                  CacheMode="BitmapCache">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Редактирование сервера" FontSize="24" FontWeight="SemiBold"/>
+                    <Button Grid.Column="1" Content="Экспорт TOML" Click="Export_Click"
+                            ToolTipService.ToolTip="Сохранить настройки этого профиля как .toml-файл (для бэкапа или ручного использования с CLI)."/>
+                    <Button Grid.Column="2" Content="Сохранить" Click="Save_Click" Style="{ThemeResource AccentButtonStyle}"
+                            ToolTipService.ToolTip="Сохранить изменения профиля."/>
+                </Grid>
+
+                <!-- Basic -->
+                <Expander Grid.Row="1" Header="Основное" IsExpanded="True" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="12" Padding="8">
+                        <TextBox Header="Имя профиля" Text="{x:Bind P.Name, Mode=TwoWay}"
+                                 ToolTipService.ToolTip="Произвольное имя для отображения в списке серверов."/>
+                        <ComboBox Header="Уровень логов" SelectedItem="{x:Bind P.LogLevel, Mode=TwoWay}"
+                                  ToolTipService.ToolTip="Подробность логирования.&#x0a;info — обычная работа.&#x0a;debug — для диагностики проблем.&#x0a;trace — максимально подробно (много данных).">
+                            <x:String>error</x:String>
+                            <x:String>warn</x:String>
+                            <x:String>info</x:String>
+                            <x:String>debug</x:String>
+                            <x:String>trace</x:String>
+                        </ComboBox>
+                        <ComboBox Header="VPN режим" SelectedItem="{x:Bind P.VpnMode, Mode=TwoWay}"
+                                  ToolTipService.ToolTip="Политика маршрутизации:&#x0a;general — через VPN идёт ВСЁ, кроме адресов из исключений.&#x0a;selective — через VPN идут ТОЛЬКО адреса из исключений, остальное напрямую.">
+                            <x:String>general</x:String>
+                            <x:String>selective</x:String>
+                        </ComboBox>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Endpoint -->
+                <Expander Grid.Row="2" Header="Endpoint (сервер)" IsExpanded="True" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="12" Padding="8">
+                        <TextBox Header="Hostname (TLS SNI)" Text="{x:Bind P.Hostname, Mode=TwoWay}"
+                                 PlaceholderText="vpn.example.com"
+                                 ToolTipService.ToolTip="Имя хоста сервера, используется для установки TLS-сессии (значение SNI). Должно совпадать с именем в сертификате сервера."/>
+                        <TextBox Header="Адреса (по одному в строке, ip[:port])"
+                                 Text="{x:Bind P.Addresses, Mode=TwoWay}"
+                                 AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"
+                                 PlaceholderText="203.0.113.1:443"
+                                 ToolTipService.ToolTip="IP-адреса сервера (можно несколько — пингер выберет лучший). Если IPv6-адресов в списке нет, IPv6-соединения через VPN будут отклонены."/>
+                        <ToggleSwitch Header="IPv6 поддержка" IsOn="{x:Bind P.HasIpv6, Mode=TwoWay}"
+                                      ToolTipService.ToolTip="Можно ли маршрутизировать IPv6-трафик через сервер."/>
+                        <TextBox Header="Username" Text="{x:Bind P.Username, Mode=TwoWay}"
+                                 ToolTipService.ToolTip="Имя пользователя для авторизации на сервере."/>
+                        <PasswordBox Header="Password" Password="{x:Bind P.Password, Mode=TwoWay}"
+                                     ToolTipService.ToolTip="Пароль для авторизации на сервере."/>
+                        <TextBox Header="Client Random (опц., hex)" Text="{x:Bind P.ClientRandom, Mode=TwoWay}"
+                                 ToolTipService.ToolTip="Префикс TLS client random в hex-формате (опционально, формат: prefix[/mask]). Используется для маркировки клиента на сервере по правилам фильтрации."/>
+                        <ToggleSwitch Header="Пропустить проверку TLS-сертификата (небезопасно)"
+                                      IsOn="{x:Bind P.SkipVerification, Mode=TwoWay}"
+                                      ToolTipService.ToolTip="Принимать любой сертификат сервера. Используй только для тестов с self-signed. В рабочем режиме оставь выключенным."/>
+                        <TextBox Header="Сертификат (PEM, опц.)" Text="{x:Bind P.Certificate, Mode=TwoWay}"
+                                 AcceptsReturn="True" TextWrapping="Wrap" MinHeight="80"
+                                 FontFamily="Consolas"
+                                 ToolTipService.ToolTip="Сертификат сервера в PEM-формате. Если не задан — проверка идёт через системное хранилище доверенных корневых сертификатов."/>
+                        <ComboBox Header="Транспорт" SelectedItem="{x:Bind P.UpstreamProtocol, Mode=TwoWay}"
+                                  ToolTipService.ToolTip="Протокол связи с сервером.&#x0a;http2 — поверх TCP, надёжнее в плохих сетях.&#x0a;http3 — поверх QUIC/UDP, быстрее, лучше обходит DPI.">
+                            <x:String>http2</x:String>
+                            <x:String>http3</x:String>
+                        </ComboBox>
+                        <ComboBox Header="Резервный транспорт" SelectedItem="{x:Bind P.UpstreamFallbackProtocol, Mode=TwoWay}"
+                                  ToolTipService.ToolTip="Если основной транспорт не работает — переключаться на этот. Пусто = без резерва.">
+                            <x:String></x:String>
+                            <x:String>http2</x:String>
+                            <x:String>http3</x:String>
+                        </ComboBox>
+                        <ToggleSwitch Header="Anti-DPI" IsOn="{x:Bind P.AntiDpi, Mode=TwoWay}"
+                                      ToolTipService.ToolTip="Включить меры обхода DPI (например, фрагментация TLS-рукопожатия). Полезно в сетях с активной фильтрацией (РФ, Китай, Иран)."/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Killswitch -->
+                <Expander Grid.Row="3" Header="Killswitch" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="12" Padding="8">
+                        <ToggleSwitch Header="Включить killswitch" IsOn="{x:Bind P.KillswitchEnabled, Mode=TwoWay}"
+                                      ToolTipService.ToolTip="Выключено: при потере связи с VPN-сервером трафик пойдёт напрямую — интернет не отвалится, но возможна утечка реального IP.&#x0a;Включено: трафик, который должен идти через VPN, блокируется до восстановления туннеля."/>
+                        <TextBox Header="Разрешённые порты (через запятую)"
+                                 Text="{x:Bind P.KillswitchAllowPorts, Mode=TwoWay}"
+                                 PlaceholderText="53, 443"
+                                 ToolTipService.ToolTip="Когда killswitch активен, на платформах с блокировкой входящих соединений — разрешать входящие на эти локальные порты. Список портов через запятую."/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Crypto -->
+                <Expander Grid.Row="4" Header="Криптография и DNS" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="12" Padding="8">
+                        <ToggleSwitch Header="Post-quantum key exchange"
+                                      IsOn="{x:Bind P.PostQuantumGroupEnabled, Mode=TwoWay}"
+                                      ToolTipService.ToolTip="Использовать постквантовую группу при обмене ключами в TLS-рукопожатии. Защита от будущих атак на классическую криптографию (когда станут доступны квантовые компьютеры)."/>
+                        <TextBox Header="DNS-апстримы (по одному в строке)"
+                                 Text="{x:Bind P.DnsUpstreams, Mode=TwoWay}"
+                                 AcceptsReturn="True" TextWrapping="Wrap" MinHeight="80"
+                                 FontFamily="Consolas"
+                                 PlaceholderText="tls://1.1.1.1&#x0a;https://dns.google/dns-query"
+                                 ToolTipService.ToolTip="DNS-резолверы, на которые перенаправляются обычные DNS-запросы, идущие через VPN.&#x0a;&#x0a;Поддерживаемые форматы:&#x0a;  8.8.8.8:53                              — обычный DNS (UDP)&#x0a;  tcp://8.8.8.8:53                       — DNS через TCP&#x0a;  tls://1.1.1.1                          — DNS-over-TLS&#x0a;  https://dns.adguard.com/dns-query      — DNS-over-HTTPS&#x0a;  quic://dns.adguard.com:8853            — DNS-over-QUIC&#x0a;  sdns://...                             — DNS Stamp"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Split tunneling -->
+                <Expander Grid.Row="5" Header="Split tunneling (исключения)" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="8" Padding="8">
+                        <TextBlock Opacity="0.7" FontSize="12"
+                                   Text="Домены/CIDR/IP — по одному в строке. Поведение зависит от 'VPN режим'."/>
+                        <TextBox Text="{x:Bind P.Exclusions, Mode=TwoWay}"
+                                 AcceptsReturn="True" TextWrapping="Wrap" MinHeight="100"
+                                 FontFamily="Consolas"
+                                 ToolTipService.ToolTip="Список адресов для специальной маршрутизации. Поведение зависит от 'VPN режим':&#x0a;  general   — эти адреса идут МИМО VPN&#x0a;  selective — ТОЛЬКО эти адреса идут через VPN&#x0a;&#x0a;Поддерживаемые форматы (по одному в строке):&#x0a;&#x0a;Домены:&#x0a;  example.com         — сам домен и www.example.com&#x0a;  *.example.com       — все поддомены, но НЕ сам домен&#x0a;&#x0a;IP-адреса:&#x0a;  1.2.3.4&#x0a;  1.2.3.4:443         — конкретный порт&#x0a;  2001:db8::1&#x0a;  [2001:db8::1]:443&#x0a;&#x0a;CIDR-диапазоны:&#x0a;  192.168.0.0/16&#x0a;  2001:db8::/32&#x0a;&#x0a;ВНИМАНИЕ: формат geosite:xxx (как в xray/sing-box) НЕ поддерживается. Готовые списки нужно разворачивать в плоский список доменов вручную."/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- TUN listener -->
+                <Expander Grid.Row="6" Header="TUN-листенер (системный VPN)" IsExpanded="True" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="12" Padding="8">
+                        <ToggleSwitch Header="Включить TUN" IsOn="{x:Bind P.TunEnabled, Mode=TwoWay}"
+                                      ToolTipService.ToolTip="Включить системный VPN-туннель через виртуальный сетевой адаптер (wintun). Требует прав администратора и наличие wintun.dll рядом с исполняемым файлом."/>
+                        <TextBox Header="Bound interface (опц.)" Text="{x:Bind P.TunBoundIf, Mode=TwoWay}"
+                                 ToolTipService.ToolTip="Имя физического интерфейса, через который пускать соединения VPN-клиента к серверу. На Windows можно указать индекс интерфейса (как в выводе 'route print') строкой. Обычно оставить пустым — авто-определение."/>
+                        <TextBox Header="Маршруты включения (по одному)"
+                                 Text="{x:Bind P.TunIncludedRoutes, Mode=TwoWay}"
+                                 AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" FontFamily="Consolas"
+                                 ToolTipService.ToolTip="CIDR-маршруты, которые направляются в TUN-интерфейс (то есть идут через VPN).&#x0a;По умолчанию: 0.0.0.0/0 и 2000::/3 — весь IPv4 и IPv6."/>
+                        <TextBox Header="Маршруты исключения (по одному)"
+                                 Text="{x:Bind P.TunExcludedRoutes, Mode=TwoWay}"
+                                 AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" FontFamily="Consolas"
+                                 ToolTipService.ToolTip="CIDR-маршруты в обход TUN-интерфейса (идут напрямую, без VPN).&#x0a;Стандартный набор для исключения локальных сетей и multicast:&#x0a;  0.0.0.0/8&#x0a;  10.0.0.0/8&#x0a;  169.254.0.0/16&#x0a;  172.16.0.0/12&#x0a;  192.168.0.0/16&#x0a;  224.0.0.0/3"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- SOCKS5 listener -->
+                <Expander Grid.Row="7" Header="SOCKS5-листенер" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="12" Padding="8">
+                        <ToggleSwitch Header="Включить SOCKS5" IsOn="{x:Bind P.Socks5Enabled, Mode=TwoWay}"
+                                      ToolTipService.ToolTip="Запустить локальный SOCKS5-прокси (с поддержкой UDP) вместо/вместе с TUN. Удобно для отдельных приложений (браузер, торрент-клиент), без подмены системного маршрута."/>
+                        <TextBox Header="Адрес" Text="{x:Bind P.Socks5Address, Mode=TwoWay}"
+                                 PlaceholderText="127.0.0.1:1080"
+                                 ToolTipService.ToolTip="IP-адрес и порт, на которых будет слушать локальный SOCKS5-прокси."/>
+                        <TextBox Header="Username (опц.)" Text="{x:Bind P.Socks5Username, Mode=TwoWay}"
+                                 ToolTipService.ToolTip="Имя пользователя для аутентификации на локальном прокси (если нужно)."/>
+                        <PasswordBox Header="Password (опц.)" Password="{x:Bind P.Socks5Password, Mode=TwoWay}"
+                                     ToolTipService.ToolTip="Пароль для аутентификации на локальном прокси (если нужно)."/>
+                    </StackPanel>
+                </Expander>
+
             </Grid>
-
-            <!-- Basic -->
-            <Expander Grid.Row="2" Header="Основное" IsExpanded="True" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="12" Padding="8">
-                    <TextBox Header="Имя профиля" Text="{x:Bind P.Name, Mode=TwoWay}"
-                             ToolTipService.ToolTip="Произвольное имя для отображения в списке серверов."/>
-                    <ComboBox Header="Уровень логов" SelectedItem="{x:Bind P.LogLevel, Mode=TwoWay}"
-                              ToolTipService.ToolTip="Подробность логирования.&#x0a;info — обычная работа.&#x0a;debug — для диагностики проблем.&#x0a;trace — максимально подробно (много данных).">
-                        <x:String>error</x:String>
-                        <x:String>warn</x:String>
-                        <x:String>info</x:String>
-                        <x:String>debug</x:String>
-                        <x:String>trace</x:String>
-                    </ComboBox>
-                    <ComboBox Header="VPN режим" SelectedItem="{x:Bind P.VpnMode, Mode=TwoWay}"
-                              ToolTipService.ToolTip="Политика маршрутизации:&#x0a;general — через VPN идёт ВСЁ, кроме адресов из исключений.&#x0a;selective — через VPN идут ТОЛЬКО адреса из исключений, остальное напрямую.">
-                        <x:String>general</x:String>
-                        <x:String>selective</x:String>
-                    </ComboBox>
-                </StackPanel>
-            </Expander>
-
-            <!-- Endpoint -->
-            <Expander Grid.Row="3" Header="Endpoint (сервер)" IsExpanded="True" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="12" Padding="8">
-                    <TextBox Header="Hostname (TLS SNI)" Text="{x:Bind P.Hostname, Mode=TwoWay}"
-                             PlaceholderText="vpn.example.com"
-                             ToolTipService.ToolTip="Имя хоста сервера, используется для установки TLS-сессии (значение SNI). Должно совпадать с именем в сертификате сервера."/>
-                    <TextBox Header="Адреса (по одному в строке, ip[:port])"
-                             Text="{x:Bind P.Addresses, Mode=TwoWay}"
-                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"
-                             PlaceholderText="203.0.113.1:443"
-                             ToolTipService.ToolTip="IP-адреса сервера (можно несколько — пингер выберет лучший). Если IPv6-адресов в списке нет, IPv6-соединения через VPN будут отклонены."/>
-                    <ToggleSwitch Header="IPv6 поддержка" IsOn="{x:Bind P.HasIpv6, Mode=TwoWay}"
-                                  ToolTipService.ToolTip="Можно ли маршрутизировать IPv6-трафик через сервер."/>
-                    <TextBox Header="Username" Text="{x:Bind P.Username, Mode=TwoWay}"
-                             ToolTipService.ToolTip="Имя пользователя для авторизации на сервере."/>
-                    <PasswordBox Header="Password" Password="{x:Bind P.Password, Mode=TwoWay}"
-                                 ToolTipService.ToolTip="Пароль для авторизации на сервере."/>
-                    <TextBox Header="Client Random (опц., hex)" Text="{x:Bind P.ClientRandom, Mode=TwoWay}"
-                             ToolTipService.ToolTip="Префикс TLS client random в hex-формате (опционально, формат: prefix[/mask]). Используется для маркировки клиента на сервере по правилам фильтрации."/>
-                    <ToggleSwitch Header="Пропустить проверку TLS-сертификата (небезопасно)"
-                                  IsOn="{x:Bind P.SkipVerification, Mode=TwoWay}"
-                                  ToolTipService.ToolTip="Принимать любой сертификат сервера. Используй только для тестов с self-signed. В рабочем режиме оставь выключенным."/>
-                    <TextBox Header="Сертификат (PEM, опц.)" Text="{x:Bind P.Certificate, Mode=TwoWay}"
-                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="80"
-                             FontFamily="Consolas"
-                             ToolTipService.ToolTip="Сертификат сервера в PEM-формате. Если не задан — проверка идёт через системное хранилище доверенных корневых сертификатов."/>
-                    <ComboBox Header="Транспорт" SelectedItem="{x:Bind P.UpstreamProtocol, Mode=TwoWay}"
-                              ToolTipService.ToolTip="Протокол связи с сервером.&#x0a;http2 — поверх TCP, надёжнее в плохих сетях.&#x0a;http3 — поверх QUIC/UDP, быстрее, лучше обходит DPI.">
-                        <x:String>http2</x:String>
-                        <x:String>http3</x:String>
-                    </ComboBox>
-                    <ComboBox Header="Резервный транспорт" SelectedItem="{x:Bind P.UpstreamFallbackProtocol, Mode=TwoWay}"
-                              ToolTipService.ToolTip="Если основной транспорт не работает — переключаться на этот. Пусто = без резерва.">
-                        <x:String></x:String>
-                        <x:String>http2</x:String>
-                        <x:String>http3</x:String>
-                    </ComboBox>
-                    <ToggleSwitch Header="Anti-DPI" IsOn="{x:Bind P.AntiDpi, Mode=TwoWay}"
-                                  ToolTipService.ToolTip="Включить меры обхода DPI (например, фрагментация TLS-рукопожатия). Полезно в сетях с активной фильтрацией (РФ, Китай, Иран)."/>
-                </StackPanel>
-            </Expander>
-
-            <!-- Killswitch -->
-            <Expander Grid.Row="4" Header="Killswitch" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="12" Padding="8">
-                    <ToggleSwitch Header="Включить killswitch" IsOn="{x:Bind P.KillswitchEnabled, Mode=TwoWay}"
-                                  ToolTipService.ToolTip="Выключено: при потере связи с VPN-сервером трафик пойдёт напрямую — интернет не отвалится, но возможна утечка реального IP.&#x0a;Включено: трафик, который должен идти через VPN, блокируется до восстановления туннеля."/>
-                    <TextBox Header="Разрешённые порты (через запятую)"
-                             Text="{x:Bind P.KillswitchAllowPorts, Mode=TwoWay}"
-                             PlaceholderText="53, 443"
-                             ToolTipService.ToolTip="Когда killswitch активен, на платформах с блокировкой входящих соединений — разрешать входящие на эти локальные порты. Список портов через запятую."/>
-                </StackPanel>
-            </Expander>
-
-            <!-- Crypto -->
-            <Expander Grid.Row="5" Header="Криптография и DNS" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="12" Padding="8">
-                    <ToggleSwitch Header="Post-quantum key exchange"
-                                  IsOn="{x:Bind P.PostQuantumGroupEnabled, Mode=TwoWay}"
-                                  ToolTipService.ToolTip="Использовать постквантовую группу при обмене ключами в TLS-рукопожатии. Защита от будущих атак на классическую криптографию (когда станут доступны квантовые компьютеры)."/>
-                    <TextBox Header="DNS-апстримы (по одному в строке)"
-                             Text="{x:Bind P.DnsUpstreams, Mode=TwoWay}"
-                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="80"
-                             FontFamily="Consolas"
-                             PlaceholderText="tls://1.1.1.1&#x0a;https://dns.google/dns-query"
-                             ToolTipService.ToolTip="DNS-резолверы, на которые перенаправляются обычные DNS-запросы, идущие через VPN.&#x0a;&#x0a;Поддерживаемые форматы:&#x0a;  8.8.8.8:53                              — обычный DNS (UDP)&#x0a;  tcp://8.8.8.8:53                       — DNS через TCP&#x0a;  tls://1.1.1.1                          — DNS-over-TLS&#x0a;  https://dns.adguard.com/dns-query      — DNS-over-HTTPS&#x0a;  quic://dns.adguard.com:8853            — DNS-over-QUIC&#x0a;  sdns://...                             — DNS Stamp"/>
-                </StackPanel>
-            </Expander>
-
-            <!-- Split tunneling -->
-            <Expander Grid.Row="6" Header="Split tunneling (исключения)" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="8" Padding="8">
-                    <TextBlock Opacity="0.7" FontSize="12"
-                               Text="Домены/CIDR/IP — по одному в строке. Поведение зависит от 'VPN режим'."/>
-                    <TextBox Text="{x:Bind P.Exclusions, Mode=TwoWay}"
-                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="100"
-                             FontFamily="Consolas"
-                             ToolTipService.ToolTip="Список адресов для специальной маршрутизации. Поведение зависит от 'VPN режим':&#x0a;  general   — эти адреса идут МИМО VPN&#x0a;  selective — ТОЛЬКО эти адреса идут через VPN&#x0a;&#x0a;Поддерживаемые форматы (по одному в строке):&#x0a;&#x0a;Домены:&#x0a;  example.com         — сам домен и www.example.com&#x0a;  *.example.com       — все поддомены, но НЕ сам домен&#x0a;&#x0a;IP-адреса:&#x0a;  1.2.3.4&#x0a;  1.2.3.4:443         — конкретный порт&#x0a;  2001:db8::1&#x0a;  [2001:db8::1]:443&#x0a;&#x0a;CIDR-диапазоны:&#x0a;  192.168.0.0/16&#x0a;  2001:db8::/32&#x0a;&#x0a;ВНИМАНИЕ: формат geosite:xxx (как в xray/sing-box) НЕ поддерживается. Готовые списки нужно разворачивать в плоский список доменов вручную."/>
-                </StackPanel>
-            </Expander>
-
-            <!-- TUN listener -->
-            <Expander Grid.Row="7" Header="TUN-листенер (системный VPN)" IsExpanded="True" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="12" Padding="8">
-                    <ToggleSwitch Header="Включить TUN" IsOn="{x:Bind P.TunEnabled, Mode=TwoWay}"
-                                  ToolTipService.ToolTip="Включить системный VPN-туннель через виртуальный сетевой адаптер (wintun). Требует прав администратора и наличие wintun.dll рядом с исполняемым файлом."/>
-                    <TextBox Header="Bound interface (опц.)" Text="{x:Bind P.TunBoundIf, Mode=TwoWay}"
-                             ToolTipService.ToolTip="Имя физического интерфейса, через который пускать соединения VPN-клиента к серверу. На Windows можно указать индекс интерфейса (как в выводе 'route print') строкой. Обычно оставить пустым — авто-определение."/>
-                    <TextBox Header="Маршруты включения (по одному)"
-                             Text="{x:Bind P.TunIncludedRoutes, Mode=TwoWay}"
-                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" FontFamily="Consolas"
-                             ToolTipService.ToolTip="CIDR-маршруты, которые направляются в TUN-интерфейс (то есть идут через VPN).&#x0a;По умолчанию: 0.0.0.0/0 и 2000::/3 — весь IPv4 и IPv6."/>
-                    <TextBox Header="Маршруты исключения (по одному)"
-                             Text="{x:Bind P.TunExcludedRoutes, Mode=TwoWay}"
-                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" FontFamily="Consolas"
-                             ToolTipService.ToolTip="CIDR-маршруты в обход TUN-интерфейса (идут напрямую, без VPN).&#x0a;Стандартный набор для исключения локальных сетей и multicast:&#x0a;  0.0.0.0/8&#x0a;  10.0.0.0/8&#x0a;  169.254.0.0/16&#x0a;  172.16.0.0/12&#x0a;  192.168.0.0/16&#x0a;  224.0.0.0/3"/>
-                </StackPanel>
-            </Expander>
-
-            <!-- SOCKS5 listener -->
-            <Expander Grid.Row="8" Header="SOCKS5-листенер" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="12" Padding="8">
-                    <ToggleSwitch Header="Включить SOCKS5" IsOn="{x:Bind P.Socks5Enabled, Mode=TwoWay}"
-                                  ToolTipService.ToolTip="Запустить локальный SOCKS5-прокси (с поддержкой UDP) вместо/вместе с TUN. Удобно для отдельных приложений (браузер, торрент-клиент), без подмены системного маршрута."/>
-                    <TextBox Header="Адрес" Text="{x:Bind P.Socks5Address, Mode=TwoWay}"
-                             PlaceholderText="127.0.0.1:1080"
-                             ToolTipService.ToolTip="IP-адрес и порт, на которых будет слушать локальный SOCKS5-прокси."/>
-                    <TextBox Header="Username (опц.)" Text="{x:Bind P.Socks5Username, Mode=TwoWay}"
-                             ToolTipService.ToolTip="Имя пользователя для аутентификации на локальном прокси (если нужно)."/>
-                    <PasswordBox Header="Password (опц.)" Password="{x:Bind P.Socks5Password, Mode=TwoWay}"
-                                 ToolTipService.ToolTip="Пароль для аутентификации на локальном прокси (если нужно)."/>
-                </StackPanel>
-            </Expander>
-
-        </Grid>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </Page>

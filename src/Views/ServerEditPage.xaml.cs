@@ -15,7 +15,11 @@ public sealed partial class ServerEditPage : Page
 {
     public ServerProfile P { get; private set; } = new();
 
-    public ServerEditPage() => InitializeComponent();
+    public ServerEditPage()
+    {
+        InitializeComponent();
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
+    }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {

@@ -30,22 +30,31 @@ public partial class App : Application
         {
             IconSource = new BitmapImage(new Uri("ms-appx:///Assets/app.ico")),
             ToolTipText = "TrustTunnel",
+            NoLeftClickDelay = true,
+            LeftClickCommand = new RelayCommand(ShowWindow),
         };
 
-        var menu = new MenuFlyout();
-        var showItem = new MenuFlyoutItem { Text = "Показать" };
-        showItem.Click += (_, _) => ShowWindow();
-        var exitItem = new MenuFlyoutItem { Text = "Выход" };
-        exitItem.Click += async (_, _) =>
+        _trayIcon.RightClickCommand = new RelayCommand(() =>
         {
-            await Tunnel.StopAsync();
-            _trayIcon?.Dispose();
-            Environment.Exit(0);
-        };
-        menu.Items.Add(showItem);
-        menu.Items.Add(exitItem);
-        _trayIcon.ContextFlyout = menu;
-        _trayIcon.LeftClickCommand = new RelayCommand(ShowWindow);
+            var menu = new MenuFlyout();
+
+            var showItem = new MenuFlyoutItem { Text = "Показать" };
+            showItem.Click += (_, _) => ShowWindow();
+            menu.Items.Add(showItem);
+
+            menu.Items.Add(new MenuFlyoutSeparator());
+
+            var exitItem = new MenuFlyoutItem { Text = "Выход" };
+            exitItem.Click += async (_, _) =>
+            {
+                await Tunnel.StopAsync();
+                _trayIcon?.Dispose();
+                Environment.Exit(0);
+            };
+            menu.Items.Add(exitItem);
+
+            _trayIcon.ShowContextMenu(menu);
+        });
 
         _trayIcon.ForceCreate();
 
@@ -66,5 +75,10 @@ public partial class App : Application
         }
     }
 
-    void ShowWindow() => MainWindow?.Activate();
+    void ShowWindow()
+    {
+        if (MainWindow == null) return;
+        MainWindow.AppWindow.Show();
+        MainWindow.Activate();
+    }
 }
