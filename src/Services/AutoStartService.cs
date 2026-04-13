@@ -18,7 +18,7 @@ public static class AutoStartService
 
     public static bool StartHidden
     {
-        get => ReadBool("StartHidden", true);
+        get => ReadBool("StartHidden", false);
         set => WriteBool("StartHidden", value);
     }
 

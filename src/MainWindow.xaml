@@ -8,14 +8,15 @@
         <MicaBackdrop Kind="Base"/>
     </Window.SystemBackdrop>
 
-    <Grid>
+    <Grid Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Перетаскиваемая зона titlebar'а -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="32" Padding="12,0,0,0">
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="32" Padding="12,0,0,0"
+              Background="Transparent">
             <TextBlock Text="TrustTunnel" VerticalAlignment="Center" FontSize="12"/>
         </Grid>
 
@@ -26,19 +27,24 @@
                         PaneDisplayMode="Left"
                         OpenPaneLength="220">
             <NavigationView.Resources>
+                <!-- Полная зачистка фонов NavigationView, чтобы Mica просвечивала везде -->
+                <SolidColorBrush x:Key="NavigationViewBackground" Color="Transparent"/>
                 <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="Transparent"/>
                 <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent"/>
-                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent"/>
                 <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="Transparent"/>
-                <SolidColorBrush x:Key="TopNavigationViewItemBackgroundSelected" Color="Transparent"/>
-                </NavigationView.Resources>
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent"/>
+                <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent"/>
+                <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
+            </NavigationView.Resources>
+
             <NavigationView.MenuItems>
                 <NavigationViewItem Tag="connection" Content="Подключение" Icon="Globe"/>
                 <NavigationViewItem Tag="servers" Content="Серверы" Icon="World"/>
                 <NavigationViewItem Tag="logs" Content="Логи" Icon="Document"/>
                 <NavigationViewItem Tag="settings" Content="Настройки" Icon="Setting"/>
             </NavigationView.MenuItems>
-            <Frame x:Name="ContentFrame"/>
+
+            <Frame x:Name="ContentFrame" Background="Transparent"/>
         </NavigationView>
     </Grid>
 </Window>
