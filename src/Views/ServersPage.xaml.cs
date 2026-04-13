@@ -48,15 +48,13 @@ public sealed partial class ServersPage : Page
 
     private async void Import_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileOpenPicker();
-        picker.FileTypeFilter.Add(".toml");
-        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(App.MainWindow));
-        var file = await picker.PickSingleFileAsync();
-        if (file == null) return;
-
         try
         {
-            var p = TomlImport.FromFile(file.Path, Path.GetFileNameWithoutExtension(file.Path));
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            var path = Win32FileDialog.ShowOpen(hwnd, "TOML config\0*.toml\0All files\0*.*\0\0");
+            if (string.IsNullOrEmpty(path)) return;
+
+            var p = TomlImport.FromFile(path, Path.GetFileNameWithoutExtension(path));
             App.Profiles.Add(p);
         }
         catch (Exception ex)

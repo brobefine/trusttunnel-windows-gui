@@ -19,9 +19,22 @@ public sealed partial class SettingsPage : Page
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         Refresh();
-        ServiceProfileBox.ItemsSource = App.Profiles.Profiles;
-        ServiceProfileBox.SelectedItem = App.Profiles.Active ?? App.Profiles.Profiles.FirstOrDefault();
+        AutostartToggle.IsOn   = AutoStartService.IsAutostartEnabled();
+        AutoConnectToggle.IsOn = AutoStartService.AutoConnect;
+        StartHiddenToggle.IsOn = AutoStartService.StartHidden;
     }
+
+    private void Autostart_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (AutostartToggle.IsOn) AutoStartService.EnableAutostart();
+        else                       AutoStartService.DisableAutostart();
+    }
+
+    private void AutoConnect_Toggled(object sender, RoutedEventArgs e)
+        => AutoStartService.AutoConnect = AutoConnectToggle.IsOn;
+
+    private void StartHidden_Toggled(object sender, RoutedEventArgs e)
+        => AutoStartService.StartHidden = StartHiddenToggle.IsOn;
 
     private void Refresh()
     {
@@ -36,22 +49,5 @@ public sealed partial class SettingsPage : Page
             "TrustTunnelGui");
         Directory.CreateDirectory(dir);
         Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
-    }
-
-    private async void ServiceInstall_Click(object sender, RoutedEventArgs e)
-    {
-        if (ServiceProfileBox.SelectedItem is not ServerProfile p) return;
-        if (!App.Binaries.ClientExeExists) { ServiceOutput.Text = "Бинарь не найден"; return; }
-        var path = App.Profiles.ConfigPathFor(p);
-        Services.ConfigService.Save(p, path);
-        var (code, output) = await App.Tunnel.InstallServiceAsync(App.Binaries.ClientExePath, path);
-        ServiceOutput.Text = $"exit={code}\n{output}";
-    }
-
-    private async void ServiceUninstall_Click(object sender, RoutedEventArgs e)
-    {
-        if (!App.Binaries.ClientExeExists) { ServiceOutput.Text = "Бинарь не найден"; return; }
-        var (code, output) = await App.Tunnel.UninstallServiceAsync(App.Binaries.ClientExePath);
-        ServiceOutput.Text = $"exit={code}\n{output}";
     }
 }

@@ -15,6 +15,12 @@ public sealed partial class MainWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+
+        this.Closed += (_, args) =>
+        {
+            args.Handled = true;
+            AppWindow.Hide();
+        };
         
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
         if (File.Exists(iconPath))

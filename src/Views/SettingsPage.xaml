@@ -22,18 +22,15 @@
                 </StackPanel>
             </Expander>
 
-            <Expander Grid.Row="2" Header="Windows-сервис" IsExpanded="True" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="2" Header="Автозапуск" IsExpanded="True" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="12" Padding="8">
-                    <TextBlock TextWrapping="Wrap" Opacity="0.7"
-                               Text="Установка регистрирует сервис с активным профилем. Требует прав администратора."/>
-                    <ComboBox x:Name="ServiceProfileBox" Header="Профиль для сервиса"
-                              DisplayMemberPath="Name" MinWidth="320"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Установить сервис" Click="ServiceInstall_Click"
-                                Style="{ThemeResource AccentButtonStyle}"/>
-                        <Button Content="Удалить сервис" Click="ServiceUninstall_Click"/>
-                    </StackPanel>
-                    <TextBlock x:Name="ServiceOutput" FontFamily="Consolas" FontSize="11" TextWrapping="Wrap"/>
+                    <ToggleSwitch x:Name="AutostartToggle" Header="Запускать при входе в систему"
+                                  Toggled="Autostart_Toggled"
+                                  ToolTipService.ToolTip="Создаёт задачу в Планировщике с правами админа — без UAC-промпта при логине."/>
+                    <ToggleSwitch x:Name="AutoConnectToggle" Header="Автоматически подключаться при запуске"
+                                  Toggled="AutoConnect_Toggled"/>
+                    <ToggleSwitch x:Name="StartHiddenToggle" Header="Запускать свёрнутым в трей"
+                                  Toggled="StartHidden_Toggled"/>
                 </StackPanel>
             </Expander>
 

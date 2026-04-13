@@ -3,8 +3,6 @@ using System.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using TrustTunnelGui.Services;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace TrustTunnelGui.Views;
 
@@ -38,16 +36,20 @@ public sealed partial class LogsPage : Page
         while (App.Tunnel.Buffer.TryDequeue(out _)) { }
     }
 
-    private async void Save_Click(object sender, RoutedEventArgs e)
+    private void Save_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileSavePicker
+        try
         {
-            SuggestedFileName = $"trusttunnel-{DateTime.Now:yyyyMMdd-HHmmss}.log"
-        };
-        picker.FileTypeChoices.Add("Log", new System.Collections.Generic.List<string> { ".log", ".txt" });
-        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(App.MainWindow));
-        var file = await picker.PickSaveFileAsync();
-        if (file != null)
-            await Windows.Storage.FileIO.WriteTextAsync(file, LogBox.Text);
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            var path = Win32FileDialog.ShowSave(
+                hwnd,
+                "Log file\0*.log\0Text file\0*.txt\0All files\0*.*\0\0",
+                "log",
+                $"trusttunnel-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+
+            if (string.IsNullOrEmpty(path)) return;
+            System.IO.File.WriteAllText(path, LogBox.Text);
+        }
+        catch { /* можно вывести InfoBar если есть */ }
     }
 }

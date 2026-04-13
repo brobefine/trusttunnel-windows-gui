@@ -7,6 +7,7 @@ using TrustTunnelGui.Models;
 using TrustTunnelGui.Services;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
+using System.IO;
 
 namespace TrustTunnelGui.Views;
 
@@ -34,21 +35,18 @@ public sealed partial class ServerEditPage : Page
         StatusBar.IsOpen = true;
     }
 
-    private async void Export_Click(object sender, RoutedEventArgs e)
+    private void Export_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
-            var picker = new FileSavePicker
-            {
-                SuggestedStartLocation = PickerLocationId.Desktop,
-                SuggestedFileName = SafeName(P.Name)
-            };
-            picker.FileTypeChoices.Add("TOML config", new System.Collections.Generic.List<string> { ".toml" });
-            InitializeWithWindow.Initialize(picker, hwnd);
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            var path = Win32FileDialog.ShowSave(
+                hwnd,
+                "TOML config\0*.toml\0All files\0*.*\0\0",
+                "toml",
+                $"{SafeName(P.Name)}.toml");
 
-            var file = await picker.PickSaveFileAsync();
-            if (file == null)
+            if (string.IsNullOrEmpty(path))
             {
                 StatusBar.Severity = InfoBarSeverity.Informational;
                 StatusBar.Title = "Отменено";
@@ -56,10 +54,9 @@ public sealed partial class ServerEditPage : Page
                 return;
             }
 
-            await Windows.Storage.FileIO.WriteTextAsync(file, ConfigService.ToToml(P));
-
+            File.WriteAllText(path, ConfigService.ToToml(P));
             StatusBar.Severity = InfoBarSeverity.Success;
-            StatusBar.Title = $"Экспортировано: {file.Path}";
+            StatusBar.Title = $"Экспортировано: {path}";
             StatusBar.IsOpen = true;
         }
         catch (Exception ex)

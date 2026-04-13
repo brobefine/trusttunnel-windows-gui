@@ -19,21 +19,30 @@
         </StackPanel>
 
         <ListView Grid.Row="2" x:Name="List" SelectionMode="None">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="0,4"/>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="m:ServerProfile">
-                    <Grid Padding="12" ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontWeight="SemiBold"/>
-                            <TextBlock Text="{x:Bind Hostname, Mode=OneWay}" Opacity="0.6" FontSize="12"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="Изменить" Tag="{x:Bind}" Click="Edit_Click"/>
-                        <Button Grid.Column="2" Content="Удалить" Tag="{x:Bind}" Click="Delete_Click"/>
-                    </Grid>
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            CornerRadius="8" Padding="16">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{x:Bind Hostname, Mode=OneWay}" Opacity="0.6" FontSize="12"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Изменить" Tag="{x:Bind}" Click="Edit_Click"/>
+                            <Button Grid.Column="2" Content="Удалить" Tag="{x:Bind}" Click="Delete_Click"/>
+                        </Grid>
+                    </Border>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
