@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="TrustTunnelGui.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls">
+
+    <Grid>
+        <NavigationView x:Name="NavView"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        SelectionChanged="NavView_SelectionChanged"
+                        PaneDisplayMode="Left"
+                        OpenPaneLength="220">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Tag="connection" Content="Подключение" Icon="Globe" />
+                <NavigationViewItem Tag="servers" Content="Серверы" Icon="World" />
+                <NavigationViewItem Tag="logs" Content="Логи" Icon="Document" />
+                <NavigationViewItem Tag="settings" Content="Настройки" Icon="Setting" />
+            </NavigationView.MenuItems>
+            <Frame x:Name="ContentFrame" />
+        </NavigationView>
+    </Grid>
+</Window>

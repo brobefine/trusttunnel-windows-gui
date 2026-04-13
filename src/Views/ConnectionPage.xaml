@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="TrustTunnelGui.Views.ConnectionPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Padding="32" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="TrustTunnel" FontSize="32" FontWeight="SemiBold"/>
+
+        <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                CornerRadius="8" Padding="16">
+            <StackPanel Spacing="8">
+                <TextBlock Text="Активный сервер" Opacity="0.7" FontSize="12"/>
+                <ComboBox x:Name="ProfileBox" MinWidth="320"
+                          DisplayMemberPath="Name"
+                          SelectionChanged="ProfileBox_SelectionChanged"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                CornerRadius="8" Padding="20">
+            <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <FontIcon x:Name="StatusIcon" Glyph="&#xE73E;" FontSize="24" Foreground="Gray"/>
+                    <TextBlock x:Name="StatusText" Text="Отключено" FontSize="20" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="ConnectBtn" Content="Подключить" Click="Connect_Click"
+                            Style="{ThemeResource AccentButtonStyle}"/>
+                    <Button x:Name="DisconnectBtn" Content="Отключить" Click="Disconnect_Click" IsEnabled="False"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <InfoBar x:Name="WarnBar" Grid.Row="3" Severity="Warning" IsClosable="False" IsOpen="False"/>
+
+        <Border Grid.Row="4" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                CornerRadius="8" Padding="12">
+            <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="LogTail" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Page>

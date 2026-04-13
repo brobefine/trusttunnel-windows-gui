@@ -1,0 +1,96 @@
+using System;
+using System.Linq;
+using Microsoft.UI;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using TrustTunnelGui.Models;
+using TrustTunnelGui.Services;
+
+namespace TrustTunnelGui.Views;
+
+public sealed partial class ConnectionPage : Page
+{
+    public ConnectionPage()
+    {
+        InitializeComponent();
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        ProfileBox.ItemsSource = App.Profiles.Profiles;
+        ProfileBox.SelectedItem = App.Profiles.Active ?? App.Profiles.Profiles.FirstOrDefault();
+
+        App.Tunnel.LogReceived  += OnLog;
+        App.Tunnel.StatusChanged += OnStatus;
+        OnStatus(App.Tunnel.Status);
+
+        if (!App.Binaries.ClientExeExists)
+        {
+            WarnBar.IsOpen = true;
+            WarnBar.Title = "Бинарь не найден";
+            WarnBar.Message = $"Положите trusttunnel_client.exe и wintun.dll рядом с приложением:\n{App.Binaries.AppDir}";
+        }
+        else if (!App.Binaries.WintunExists)
+        {
+            WarnBar.IsOpen = true;
+            WarnBar.Title = "Нет wintun.dll";
+            WarnBar.Message = "TUN-листенер не запустится без wintun.dll";
+        }
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        App.Tunnel.LogReceived  -= OnLog;
+        App.Tunnel.StatusChanged -= OnStatus;
+    }
+
+    private void OnLog(string line) => Ui.Run(() =>
+    {
+        LogTail.Text += line + "\n";
+        // keep tail short for the panel
+        if (LogTail.Text.Length > 16000)
+            LogTail.Text = LogTail.Text[^12000..];
+        LogScroll.ChangeView(null, LogScroll.ScrollableHeight, null, true);
+    });
+
+    private void OnStatus(TunnelStatus s) => Ui.Run(() =>
+    {
+        (StatusText.Text, var color, var enableConnect, var enableDisconnect) = s switch
+        {
+            TunnelStatus.Stopped  => ("Отключено",   Colors.Gray,        true,  false),
+            TunnelStatus.Starting => ("Запуск...",   Colors.Orange,      false, false),
+            TunnelStatus.Running  => ("Подключено",  Colors.LimeGreen,   false, true ),
+            TunnelStatus.Stopping => ("Остановка...",Colors.Orange,      false, false),
+            TunnelStatus.Error    => ("Ошибка",      Colors.OrangeRed,   true,  false),
+            _ => ("?", Colors.Gray, true, false)
+        };
+        StatusIcon.Foreground = new SolidColorBrush(color);
+        ConnectBtn.IsEnabled = enableConnect && ProfileBox.SelectedItem != null;
+        DisconnectBtn.IsEnabled = enableDisconnect;
+    });
+
+    private void ProfileBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ProfileBox.SelectedItem is ServerProfile p)
+        {
+            App.Profiles.SetActive(p);
+            ConnectBtn.IsEnabled = App.Tunnel.Status is TunnelStatus.Stopped or TunnelStatus.Error;
+        }
+    }
+
+    private void Connect_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProfileBox.SelectedItem is not ServerProfile p) return;
+        var path = App.Profiles.ConfigPathFor(p);
+        ConfigService.Save(p, path);
+        App.Tunnel.Start(App.Binaries.ClientExePath, path);
+    }
+
+    private async void Disconnect_Click(object sender, RoutedEventArgs e)
+    {
+        await App.Tunnel.StopAsync();
+    }
+}

@@ -1,0 +1,11 @@
+bin/
+obj/
+*.user
+.vs/
+*.suo
+artifacts/
+release/
+*.zip
+wintun.zip
+wintun-extract/
+wintun.dll
