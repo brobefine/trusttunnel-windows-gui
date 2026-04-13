@@ -25,6 +25,13 @@
                         SelectionChanged="NavView_SelectionChanged"
                         PaneDisplayMode="Left"
                         OpenPaneLength="220">
+            <NavigationView.Resources>
+                <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="Transparent"/>
+                <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent"/>
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent"/>
+                <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="Transparent"/>
+                <SolidColorBrush x:Key="TopNavigationViewItemBackgroundSelected" Color="Transparent"/>
+                </NavigationView.Resources>
             <NavigationView.MenuItems>
                 <NavigationViewItem Tag="connection" Content="Подключение" Icon="Globe"/>
                 <NavigationViewItem Tag="servers" Content="Серверы" Icon="World"/>

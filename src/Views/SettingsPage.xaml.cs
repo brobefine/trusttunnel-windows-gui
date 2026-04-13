@@ -5,8 +5,6 @@ using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using TrustTunnelGui.Models;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace TrustTunnelGui.Views;
 
@@ -29,17 +27,6 @@ public sealed partial class SettingsPage : Page
     {
         ExePathText.Text    = $"Клиент: {App.Binaries.ClientExePath}  ({(App.Binaries.ClientExeExists ? "OK" : "НЕТ")})";
         WintunPathText.Text = $"wintun.dll: {App.Binaries.WintunDllPath}  ({(App.Binaries.WintunExists ? "OK" : "НЕТ")})";
-    }
-
-    private async void PickFolder_Click(object sender, RoutedEventArgs e)
-    {
-        var picker = new FolderPicker();
-        picker.FileTypeFilter.Add("*");
-        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(App.MainWindow));
-        var folder = await picker.PickSingleFolderAsync();
-        if (folder == null) return;
-        App.Binaries.UserOverridePath = folder.Path;
-        Refresh();
     }
 
     private void OpenConfigs_Click(object sender, RoutedEventArgs e)

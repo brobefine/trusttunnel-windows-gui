@@ -1,6 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using TrustTunnelGui.Views;
+using System;
+using System.IO;
 
 namespace TrustTunnelGui;
 
@@ -13,7 +15,10 @@ public sealed partial class MainWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
-        AppWindow.SetIcon("Assets/app.ico");
+        
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
+        if (File.Exists(iconPath))
+            AppWindow.SetIcon(iconPath);
 
         ContentFrame.Navigate(typeof(ConnectionPage));
         NavView.SelectedItem = NavView.MenuItems[0];

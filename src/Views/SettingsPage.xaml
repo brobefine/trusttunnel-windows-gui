@@ -18,7 +18,6 @@
                 <StackPanel Spacing="12" Padding="8">
                     <TextBlock x:Name="ExePathText" FontFamily="Consolas" TextWrapping="Wrap"/>
                     <TextBlock x:Name="WintunPathText" FontFamily="Consolas" TextWrapping="Wrap"/>
-                    <Button Content="Указать папку с trusttunnel_client.exe" Click="PickFolder_Click"/>
                     <Button Content="Открыть папку конфигов" Click="OpenConfigs_Click"/>
                 </StackPanel>
             </Expander>
