@@ -88,13 +88,13 @@ src/
 
 ## Известные нюансы
 
-- Точный флаг для удаления сервиса — `--service-uninstall` (по аналогии с `--service-install`).
-  Если в актуальной версии CLI он называется иначе (`--service-remove` и т.п.) —
+- Точный флаг для удаления сервиса - `--service-uninstall` (по аналогии с `--service-install`).
+  Если в актуальной версии CLI он называется иначе (`--service-remove` и т.п.) -
   поправь в `Services/TrustTunnelService.cs::UninstallServiceAsync`.
 - Для иконок (`Assets/`) добавь свои PNG до первой публикации, иначе MSBuild ругнётся
   warnings (но соберёт). См. `src/Assets/README.txt`.
-- `WindowsPackageType=None` — приложение распространяется как папка, а не MSIX.
-  Если нужен MSIX — отдельный publish profile с `<WindowsPackageType>MSIX</WindowsPackageType>`.
+- `WindowsPackageType=None` - приложение распространяется как папка, а не MSIX.
+  Если нужен MSIX - отдельный publish profile с `<WindowsPackageType>MSIX</WindowsPackageType>`.
 
 ## Лицензия
 
