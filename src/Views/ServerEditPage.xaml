@@ -17,7 +17,9 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" ColumnSpacing="8">
+            <InfoBar x:Name="StatusBar" Grid.Row="0" IsClosable="True" IsOpen="False"/>
+
+            <Grid Grid.Row="1" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -31,7 +33,7 @@
             </Grid>
 
             <!-- Basic -->
-            <Expander Grid.Row="1" Header="Основное" IsExpanded="True" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="2" Header="Основное" IsExpanded="True" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="12" Padding="8">
                     <TextBox Header="Имя профиля" Text="{x:Bind P.Name, Mode=TwoWay}"
                              ToolTipService.ToolTip="Произвольное имя для отображения в списке серверов."/>
@@ -52,7 +54,7 @@
             </Expander>
 
             <!-- Endpoint -->
-            <Expander Grid.Row="2" Header="Endpoint (сервер)" IsExpanded="True" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="3" Header="Endpoint (сервер)" IsExpanded="True" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="12" Padding="8">
                     <TextBox Header="Hostname (TLS SNI)" Text="{x:Bind P.Hostname, Mode=TwoWay}"
                              PlaceholderText="vpn.example.com"
@@ -94,7 +96,7 @@
             </Expander>
 
             <!-- Killswitch -->
-            <Expander Grid.Row="3" Header="Killswitch" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="4" Header="Killswitch" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="12" Padding="8">
                     <ToggleSwitch Header="Включить killswitch" IsOn="{x:Bind P.KillswitchEnabled, Mode=TwoWay}"
                                   ToolTipService.ToolTip="Выключено: при потере связи с VPN-сервером трафик пойдёт напрямую — интернет не отвалится, но возможна утечка реального IP.&#x0a;Включено: трафик, который должен идти через VPN, блокируется до восстановления туннеля."/>
@@ -106,7 +108,7 @@
             </Expander>
 
             <!-- Crypto -->
-            <Expander Grid.Row="4" Header="Криптография и DNS" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="5" Header="Криптография и DNS" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="12" Padding="8">
                     <ToggleSwitch Header="Post-quantum key exchange"
                                   IsOn="{x:Bind P.PostQuantumGroupEnabled, Mode=TwoWay}"
@@ -121,7 +123,7 @@
             </Expander>
 
             <!-- Split tunneling -->
-            <Expander Grid.Row="5" Header="Split tunneling (исключения)" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="6" Header="Split tunneling (исключения)" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="8" Padding="8">
                     <TextBlock Opacity="0.7" FontSize="12"
                                Text="Домены/CIDR/IP — по одному в строке. Поведение зависит от 'VPN режим'."/>
@@ -133,7 +135,7 @@
             </Expander>
 
             <!-- TUN listener -->
-            <Expander Grid.Row="6" Header="TUN-листенер (системный VPN)" IsExpanded="True" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="7" Header="TUN-листенер (системный VPN)" IsExpanded="True" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="12" Padding="8">
                     <ToggleSwitch Header="Включить TUN" IsOn="{x:Bind P.TunEnabled, Mode=TwoWay}"
                                   ToolTipService.ToolTip="Включить системный VPN-туннель через виртуальный сетевой адаптер (wintun). Требует прав администратора и наличие wintun.dll рядом с исполняемым файлом."/>
@@ -151,7 +153,7 @@
             </Expander>
 
             <!-- SOCKS5 listener -->
-            <Expander Grid.Row="7" Header="SOCKS5-листенер" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="8" Header="SOCKS5-листенер" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="12" Padding="8">
                     <ToggleSwitch Header="Включить SOCKS5" IsOn="{x:Bind P.Socks5Enabled, Mode=TwoWay}"
                                   ToolTipService.ToolTip="Запустить локальный SOCKS5-прокси (с поддержкой UDP) вместо/вместе с TUN. Удобно для отдельных приложений (браузер, торрент-клиент), без подмены системного маршрута."/>
@@ -165,7 +167,6 @@
                 </StackPanel>
             </Expander>
 
-            <InfoBar x:Name="StatusBar" Grid.Row="8" IsClosable="True" IsOpen="False"/>
         </Grid>
     </ScrollViewer>
 </Page>

@@ -36,15 +36,39 @@ public sealed partial class ServerEditPage : Page
 
     private async void Export_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileSavePicker { SuggestedFileName = $"{SafeName(P.Name)}.toml" };
-        picker.FileTypeChoices.Add("TOML", new System.Collections.Generic.List<string> { ".toml" });
-        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(App.MainWindow));
-        var file = await picker.PickSaveFileAsync();
-        if (file == null) return;
-        await Windows.Storage.FileIO.WriteTextAsync(file, ConfigService.ToToml(P));
-        StatusBar.Severity = InfoBarSeverity.Success;
-        StatusBar.Title = $"Экспортировано в {file.Path}";
-        StatusBar.IsOpen = true;
+        try
+        {
+            var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+            var picker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.Desktop,
+                SuggestedFileName = SafeName(P.Name)
+            };
+            picker.FileTypeChoices.Add("TOML config", new System.Collections.Generic.List<string> { ".toml" });
+            InitializeWithWindow.Initialize(picker, hwnd);
+
+            var file = await picker.PickSaveFileAsync();
+            if (file == null)
+            {
+                StatusBar.Severity = InfoBarSeverity.Informational;
+                StatusBar.Title = "Отменено";
+                StatusBar.IsOpen = true;
+                return;
+            }
+
+            await Windows.Storage.FileIO.WriteTextAsync(file, ConfigService.ToToml(P));
+
+            StatusBar.Severity = InfoBarSeverity.Success;
+            StatusBar.Title = $"Экспортировано: {file.Path}";
+            StatusBar.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            StatusBar.Severity = InfoBarSeverity.Error;
+            StatusBar.Title = "Ошибка экспорта";
+            StatusBar.Message = ex.Message;
+            StatusBar.IsOpen = true;
+        }
     }
 
     private static string SafeName(string n)
@@ -52,5 +76,11 @@ public sealed partial class ServerEditPage : Page
         foreach (var c in System.IO.Path.GetInvalidFileNameChars())
             n = n.Replace(c, '_');
         return string.IsNullOrWhiteSpace(n) ? "profile" : n;
+    }
+
+    public ServerEditPage()
+    {
+        InitializeComponent();
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
     }
 }
