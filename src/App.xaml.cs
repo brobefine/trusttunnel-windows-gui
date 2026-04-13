@@ -1,6 +1,9 @@
-using Microsoft.UI.Xaml;
-using TrustTunnelGui.Services;
+using System;
 using H.NotifyIcon;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using CommunityToolkit.Mvvm.Input;
+using TrustTunnelGui.Services;
 
 namespace TrustTunnelGui;
 

@@ -31,8 +31,6 @@ public static class AutoStartService
     public static void EnableAutostart()
     {
         var exe = Process.GetCurrentProcess().MainModule!.FileName!;
-        // /RL HIGHEST = run with highest privileges (без UAC)
-        // /SC ONLOGON = триггер при входе пользователя
         Run("schtasks", "/Create", "/F", "/SC", "ONLOGON", "/RL", "HIGHEST",
             "/TN", TaskName, "/TR", $"\"{exe}\"");
     }

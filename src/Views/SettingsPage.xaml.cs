@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using TrustTunnelGui.Models;
+using TrustTunnelGui.Services;
 
 namespace TrustTunnelGui.Views;
 
