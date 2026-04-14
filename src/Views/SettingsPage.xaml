@@ -24,7 +24,7 @@
                 </StackPanel>
             </Expander>
 
-            <Expander Grid.Row="2" Header="Автозапуск" IsExpanded="True" HorizontalAlignment="Stretch">
+            <Expander Grid.Row="2" Header="Автозапуск и поведение" IsExpanded="True" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="12" Padding="8">
                     <ToggleSwitch x:Name="AutostartToggle" Header="Запускать при входе в систему"
                                   Toggled="Autostart_Toggled"
@@ -33,6 +33,9 @@
                                   Toggled="AutoConnect_Toggled"/>
                     <ToggleSwitch x:Name="StartHiddenToggle" Header="Запускать свёрнутым в трей"
                                   Toggled="StartHidden_Toggled"/>
+                    <ToggleSwitch x:Name="ResetAdapterToggle" Header="Сбрасывать сетевой адаптер перед подключением"
+                                  Toggled="ResetAdapter_Toggled"
+                                  ToolTipService.ToolTip="Отключает и включает активный физический сетевой адаптер перед запуском туннеля. Очищает остатки от других VPN-клиентов. По умолчанию ВЫКЛЮЧЕНО — при включённой опции клиент может падать с ошибкой 'Couldn't detect active network interface' если адаптер не успел подняться."/>
                 </StackPanel>
             </Expander>
 

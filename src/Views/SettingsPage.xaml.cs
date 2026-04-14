@@ -19,9 +19,10 @@ public sealed partial class SettingsPage : Page
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         Refresh();
-        AutostartToggle.IsOn   = AutoStartService.IsAutostartEnabled();
-        AutoConnectToggle.IsOn = AutoStartService.AutoConnect;
-        StartHiddenToggle.IsOn = AutoStartService.StartHidden;
+        AutostartToggle.IsOn    = AutoStartService.IsAutostartEnabled();
+        AutoConnectToggle.IsOn  = AutoStartService.AutoConnect;
+        StartHiddenToggle.IsOn  = AutoStartService.StartHidden;
+        ResetAdapterToggle.IsOn = AutoStartService.ResetAdapterOnConnect;
     }
 
     private void Autostart_Toggled(object sender, RoutedEventArgs e)
@@ -35,6 +36,9 @@ public sealed partial class SettingsPage : Page
 
     private void StartHidden_Toggled(object sender, RoutedEventArgs e)
         => AutoStartService.StartHidden = StartHiddenToggle.IsOn;
+
+    private void ResetAdapter_Toggled(object sender, RoutedEventArgs e)
+        => AutoStartService.ResetAdapterOnConnect = ResetAdapterToggle.IsOn;
 
     private void Refresh()
     {
@@ -51,7 +55,6 @@ public sealed partial class SettingsPage : Page
         Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
     }
 
-    // ── Smooth mouse-wheel scrolling (same pattern as ServerEditPage) ──────
     private void MainScroll_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
     {
         if (sender is not ScrollViewer sv) return;

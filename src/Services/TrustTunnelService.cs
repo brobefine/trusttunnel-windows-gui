@@ -22,11 +22,6 @@ public class TrustTunnelService
 
     public bool IsRunning => _proc is { HasExited: false };
 
-    /// <summary>
-    /// Запускает trusttunnel_client.exe. Перед запуском перетряхивает
-    /// активный сетевой адаптер — это очищает стек от остатков
-    /// предыдущих VPN-клиентов (как делает референсный bat-файл).
-    /// </summary>
     public async Task StartAsync(string exePath, string configPath)
     {
         if (IsRunning) return;
@@ -45,16 +40,21 @@ public class TrustTunnelService
 
         SetStatus(TunnelStatus.Starting);
 
-        await ResetActiveNetworkAdapterAsync();
+        // Only reset the adapter if the user explicitly enabled it in settings.
+        // By default this is OFF — resetting the adapter while the client is
+        // starting causes "Couldn't detect active network interface" errors
+        // because the NIC isn't fully up yet when trusttunnel_client.exe runs.
+        if (AutoStartService.ResetAdapterOnConnect)
+            await ResetActiveNetworkAdapterAsync();
 
         var psi = new ProcessStartInfo
         {
             FileName = exePath,
             WorkingDirectory = Path.GetDirectoryName(exePath) ?? Environment.CurrentDirectory,
             RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
+            RedirectStandardError  = true,
+            UseShellExecute  = false,
+            CreateNoWindow   = true,
         };
         psi.ArgumentList.Add("-c");
         psi.ArgumentList.Add(configPath);
@@ -88,7 +88,6 @@ public class TrustTunnelService
         SetStatus(TunnelStatus.Stopping);
         try
         {
-            // Сначала шлём Ctrl+C — клиент успевает корректно убрать TUN-адаптер
             var sentCtrlC = SendCtrlC(_proc.Id);
             if (sentCtrlC)
             {
@@ -119,16 +118,15 @@ public class TrustTunnelService
         SetStatus(TunnelStatus.Stopped);
     }
 
-    /// <summary>Runs trusttunnel_client.exe with arbitrary args and returns stdout+stderr.</summary>
     public async Task<(int code, string output)> RunOnceAsync(string exePath, params string[] args)
     {
         var psi = new ProcessStartInfo
         {
             FileName = exePath,
             RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            RedirectStandardError  = true,
             UseShellExecute = false,
-            CreateNoWindow = true,
+            CreateNoWindow  = true,
         };
         foreach (var a in args) psi.ArgumentList.Add(a);
 
@@ -159,12 +157,6 @@ public class TrustTunnelService
         StatusChanged?.Invoke(s);
     }
 
-    /// <summary>
-    /// Перезапускает активный физический сетевой адаптер (Wi-Fi или Ethernet).
-    /// Очищает остаточное состояние от других VPN-клиентов перед запуском туннеля.
-    /// Аналог netsh interface disable/enable из референсного bat-файла, но с
-    /// автоопределением адаптера (а не хардкодом имени "Беспроводная сеть").
-    /// </summary>
     private async Task ResetActiveNetworkAdapterAsync()
     {
         try
@@ -182,16 +174,20 @@ public class TrustTunnelService
                 "Disable-NetAdapter -Name $a.Name -Confirm:$false; " +
                 "Start-Sleep -Seconds 3; " +
                 "Enable-NetAdapter -Name $a.Name -Confirm:$false; " +
-                "Start-Sleep -Seconds 3; " +
+                // Wait until the adapter reports Up, up to 15 s
+                "$deadline = (Get-Date).AddSeconds(15); " +
+                "do { Start-Sleep -Seconds 1 } while " +
+                "((Get-NetAdapter -Name $a.Name).Status -ne 'Up' -and (Get-Date) -lt $deadline); " +
+                "Write-Output \"Adapter back up\"; " +
                 "} else { Write-Output 'No active physical adapter found' }";
 
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                RedirectStandardError  = true,
                 UseShellExecute = false,
-                CreateNoWindow = true,
+                CreateNoWindow  = true,
             };
             psi.ArgumentList.Add("-NoProfile");
             psi.ArgumentList.Add("-ExecutionPolicy");
@@ -215,7 +211,7 @@ public class TrustTunnelService
         }
     }
 
-    // ---- Ctrl+C для консольного процесса через kernel32 ----
+    // ---- Ctrl+C ----
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool AttachConsole(uint dwProcessId);
@@ -231,20 +227,14 @@ public class TrustTunnelService
 
     private const uint CTRL_C_EVENT = 0;
 
-    /// <summary>
-    /// Шлёт Ctrl+C дочернему консольному процессу, чтобы он завершился штатно
-    /// (и успел убрать wintun-адаптер). Без этого Kill() оставляет orphaned-адаптер.
-    /// </summary>
     private static bool SendCtrlC(int pid)
     {
         try
         {
             FreeConsole();
             if (!AttachConsole((uint)pid)) return false;
-
             SetConsoleCtrlHandler(IntPtr.Zero, true);
             var ok = GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
-
             FreeConsole();
             SetConsoleCtrlHandler(IntPtr.Zero, false);
             return ok;

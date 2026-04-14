@@ -7,7 +7,7 @@ namespace TrustTunnelGui.Services;
 
 public static class AutoStartService
 {
-    private const string TaskName = "TrustTunnelGuiAutostart";
+    private const string TaskName   = "TrustTunnelGuiAutostart";
     private const string SettingsKey = @"Software\TrustTunnelGui";
 
     public static bool AutoConnect
@@ -20,6 +20,18 @@ public static class AutoStartService
     {
         get => ReadBool("StartHidden", false);
         set => WriteBool("StartHidden", value);
+    }
+
+    /// <summary>
+    /// When true, the GUI disables and re-enables the active NIC before
+    /// starting the tunnel (clears leftover state from other VPN clients).
+    /// Disabled by default — it causes "Couldn't detect active network
+    /// interface" errors if the adapter isn't back up in time.
+    /// </summary>
+    public static bool ResetAdapterOnConnect
+    {
+        get => ReadBool("ResetAdapterOnConnect", false);
+        set => WriteBool("ResetAdapterOnConnect", value);
     }
 
     public static bool IsAutostartEnabled()
@@ -46,9 +58,9 @@ public static class AutoStartService
         {
             FileName = exe,
             RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            RedirectStandardError  = true,
             UseShellExecute = false,
-            CreateNoWindow = true,
+            CreateNoWindow  = true,
         };
         foreach (var a in args) psi.ArgumentList.Add(a);
         using var p = Process.Start(psi)!;

@@ -18,33 +18,23 @@
             <ToggleSwitch x:Name="AutoScroll" IsOn="True" OnContent="Автопрокрутка" OffContent="Автопрокрутка"/>
         </StackPanel>
 
-        <Border Grid.Row="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="12">
-            <ListView x:Name="LogList"
-                      SelectionMode="Extended"
-                      IsItemClickEnabled="False"
-                      ShowsScrollingPlaceholders="False"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                      ScrollViewer.IsHorizontalScrollChainingEnabled="False"
-                      ScrollViewer.BringIntoViewOnFocusChange="False">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="MinHeight" Value="0"/>
-                        <Setter Property="Padding" Value="4,0"/>
-                        <Setter Property="Margin" Value="0"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}"
-                                   FontFamily="Consolas"
-                                   FontSize="12"
-                                   IsTextSelectionEnabled="True"
-                                   TextWrapping="NoWrap"/>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+        <!-- ReadOnly TextBox: supports full multi-line text selection (Ctrl+A, drag, Shift+click)
+             unlike ListView which only allows selecting text within a single item. -->
+        <Border Grid.Row="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                CornerRadius="8" Padding="4">
+            <TextBox x:Name="LogBox"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="NoWrap"
+                     FontFamily="Consolas"
+                     FontSize="12"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     VerticalAlignment="Stretch"
+                     HorizontalAlignment="Stretch"
+                     VerticalContentAlignment="Top"/>
         </Border>
     </Grid>
 </Page>
