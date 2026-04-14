@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -11,9 +13,8 @@ namespace TrustTunnelGui.Views;
 
 public sealed partial class ConnectionPage : Page
 {
-    // Keep only the last N lines in the mini log tail on the main page.
-    private const int TailMaxLines = 200;
-    private int _tailLineCount = 0;
+    private const int MaxLines = 2000;
+    private readonly List<string> _lines = new(MaxLines + 10);
 
     public ConnectionPage()
     {
@@ -26,6 +27,11 @@ public sealed partial class ConnectionPage : Page
     {
         ProfileBox.ItemsSource  = App.Profiles.Profiles;
         ProfileBox.SelectedItem = App.Profiles.Active ?? App.Profiles.Profiles.FirstOrDefault();
+
+        // Populate log from buffer
+        _lines.Clear();
+        foreach (var line in App.Tunnel.Buffer) _lines.Add(line);
+        RebuildLogText();
 
         App.Tunnel.LogReceived   += OnLog;
         App.Tunnel.StatusChanged += OnStatus;
@@ -43,6 +49,8 @@ public sealed partial class ConnectionPage : Page
             WarnBar.Title   = "Нет wintun.dll";
             WarnBar.Message = "TUN-листенер не запустится без wintun.dll";
         }
+
+        if (AutoScroll.IsOn) ScrollToEnd();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -51,21 +59,65 @@ public sealed partial class ConnectionPage : Page
         App.Tunnel.StatusChanged -= OnStatus;
     }
 
+    // ── Logging ────────────────────────────────────────────────────────────
+
     private void OnLog(string line) => Ui.Run(() =>
     {
-        LogTail.Text += line + "\n";
-        _tailLineCount++;
+        _lines.Add(line);
+        if (_lines.Count > MaxLines) _lines.RemoveAt(0);
 
-        // Trim by line count, not character count — more predictable behaviour.
-        if (_tailLineCount > TailMaxLines)
+        LogBox.Text += line + "\n";
+        // Keep TextBox in sync with the capped _lines list
+        if (_lines.Count == MaxLines)
         {
-            var idx = LogTail.Text.IndexOf('\n');
-            if (idx >= 0) LogTail.Text = LogTail.Text[(idx + 1)..];
-            _tailLineCount--;
+            var idx = LogBox.Text.IndexOf('\n');
+            if (idx >= 0) LogBox.Text = LogBox.Text[(idx + 1)..];
         }
 
-        LogScroll.ChangeView(null, double.MaxValue, null, disableAnimation: true);
+        if (AutoScroll.IsOn) ScrollToEnd();
     });
+
+    private void RebuildLogText()
+    {
+        var sb = new StringBuilder();
+        foreach (var l in _lines) sb.Append(l).Append('\n');
+        LogBox.Text = sb.ToString();
+    }
+
+    private void ScrollToEnd()
+    {
+        var len = LogBox.Text.Length;
+        if (len > 0)
+        {
+            LogBox.SelectionStart  = len;
+            LogBox.SelectionLength = 0;
+        }
+    }
+
+    private void Clear_Click(object sender, RoutedEventArgs e)
+    {
+        _lines.Clear();
+        LogBox.Text = string.Empty;
+        App.Tunnel.Buffer.Clear();
+    }
+
+    private void Save_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            var path = Win32FileDialog.ShowSave(
+                hwnd,
+                "Log file\0*.log\0Text file\0*.txt\0All files\0*.*\0\0",
+                "log",
+                $"trusttunnel-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+            if (!string.IsNullOrEmpty(path))
+                System.IO.File.WriteAllText(path, LogBox.Text);
+        }
+        catch { }
+    }
+
+    // ── Status ─────────────────────────────────────────────────────────────
 
     private void OnStatus(TunnelStatus s) => Ui.Run(() =>
     {
@@ -78,7 +130,7 @@ public sealed partial class ConnectionPage : Page
             TunnelStatus.Error    => ("Ошибка",       Colors.OrangeRed, true,  false),
             _                     => ("?",            Colors.Gray,      true,  false)
         };
-        StatusIcon.Foreground = new SolidColorBrush(color);
+        StatusIcon.Foreground   = new SolidColorBrush(color);
         ConnectBtn.IsEnabled    = enableConnect && ProfileBox.SelectedItem != null;
         DisconnectBtn.IsEnabled = enableDisconnect;
     });
@@ -95,13 +147,27 @@ public sealed partial class ConnectionPage : Page
     private async void Connect_Click(object sender, RoutedEventArgs e)
     {
         if (ProfileBox.SelectedItem is not ServerProfile p) return;
-        var path = App.Profiles.ConfigPathFor(p);
-        ConfigService.Save(p, path);
-        await App.Tunnel.StartAsync(App.Binaries.ClientExePath, path);
+        try
+        {
+            var path = App.Profiles.ConfigPathFor(p);
+            ConfigService.Save(p, path);
+            await App.Tunnel.StartAsync(App.Binaries.ClientExePath, path);
+        }
+        catch (Exception ex)
+        {
+            App.Tunnel.Buffer.Enqueue($"[gui] Connect error: {ex.Message}");
+        }
     }
 
     private async void Disconnect_Click(object sender, RoutedEventArgs e)
     {
-        await App.Tunnel.StopAsync();
+        try
+        {
+            await App.Tunnel.StopAsync();
+        }
+        catch (Exception ex)
+        {
+            App.Tunnel.Buffer.Enqueue($"[gui] Disconnect error: {ex.Message}");
+        }
     }
 }

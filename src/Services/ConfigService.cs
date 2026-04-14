@@ -1,16 +1,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using Tomlyn;
 using Tomlyn.Model;
 using TrustTunnelGui.Models;
 
 namespace TrustTunnelGui.Services;
 
-/// <summary>
-/// Generates the TOML file expected by trusttunnel_client.exe.
-/// Schema reference: TrustTunnel/TrustTunnelClient/trusttunnel/README.md
-/// </summary>
 public static class ConfigService
 {
     public static string ToToml(ServerProfile p)
@@ -22,7 +19,7 @@ public static class ConfigService
             ["killswitch_enabled"]         = p.KillswitchEnabled,
             ["killswitch_allow_ports"]     = ToLongArray(ServerProfile.SplitPorts(p.KillswitchAllowPorts)),
             ["post_quantum_group_enabled"] = p.PostQuantumGroupEnabled,
-            ["exclusions"]                 = ToStringArray(ServerProfile.SplitLines(p.Exclusions)),
+            ["exclusions"]                 = ToStringArray(ExpandDomains(ServerProfile.SplitLines(p.Exclusions))),
             ["dns_upstreams"]              = ToStringArray(ServerProfile.SplitLines(p.DnsUpstreams)),
         };
 
@@ -73,14 +70,38 @@ public static class ConfigService
         File.WriteAllText(path, ToToml(p));
     }
 
-    // Use plain .NET arrays, NOT TomlArray.
-    // TomlArray inherits List<object?> — Add(string) resolves to Add(object?),
-    // so Tomlyn receives boxed objects and may serialise the whole array as one
-    // concatenated string instead of individual quoted elements.
-    // Passing string[] / long[] lets Tomlyn's own type detection handle
-    // serialisation correctly and guarantees ["a", "b", ...] output.
+    /// <summary>
+    /// For each plain domain like "yandex.ru" also emits "*.yandex.ru"
+    /// so both the apex domain and all subdomains are covered.
+    /// Wildcards, IPs, CIDRs and host:port entries are passed through as-is.
+    /// </summary>
+    private static List<string> ExpandDomains(List<string> entries)
+    {
+        var result = new List<string>(entries.Count * 2);
+        var seen   = new HashSet<string>();
+
+        foreach (var entry in entries)
+        {
+            if (seen.Add(entry))
+                result.Add(entry);
+
+            // Only expand bare hostnames: no wildcard, no slash (CIDR),
+            // no colon (IPv6 or host:port), not a raw IPv4, must have a dot.
+            if (!entry.StartsWith('*')
+                && !entry.Contains('/')
+                && !entry.Contains(':')
+                && entry.Contains('.')
+                && !IPAddress.TryParse(entry, out _))
+            {
+                var wildcard = "*." + entry;
+                if (seen.Add(wildcard))
+                    result.Add(wildcard);
+            }
+        }
+        return result;
+    }
 
     private static string[] ToStringArray(List<string> items) => items.ToArray();
-
-    private static long[] ToLongArray(List<int> items) => items.Select(i => (long)i).ToArray();
+    private static string[] ToStringArray(IEnumerable<string> items) => items.ToArray();
+    private static long[]   ToLongArray(List<int> items) => items.Select(i => (long)i).ToArray();
 }

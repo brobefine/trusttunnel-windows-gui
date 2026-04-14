@@ -21,7 +21,7 @@ public sealed partial class MainWindow : Window
             args.Handled = true;
             AppWindow.Hide();
         };
-        
+
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
         if (File.Exists(iconPath))
             AppWindow.SetIcon(iconPath);
@@ -37,7 +37,6 @@ public sealed partial class MainWindow : Window
         {
             "connection" => typeof(ConnectionPage),
             "servers"    => typeof(ServersPage),
-            "logs"       => typeof(LogsPage),
             "settings"   => typeof(SettingsPage),
             _            => typeof(ConnectionPage)
         };
