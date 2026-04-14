@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Tomlyn;
@@ -16,28 +17,28 @@ public static class ConfigService
     {
         var root = new TomlTable
         {
-            ["loglevel"] = p.LogLevel,
-            ["vpn_mode"] = p.VpnMode,
-            ["killswitch_enabled"] = p.KillswitchEnabled,
-            ["killswitch_allow_ports"] = ToArray(ServerProfile.SplitPorts(p.KillswitchAllowPorts).Cast<object>()),
+            ["loglevel"]                   = p.LogLevel,
+            ["vpn_mode"]                   = p.VpnMode,
+            ["killswitch_enabled"]         = p.KillswitchEnabled,
+            ["killswitch_allow_ports"]     = ToLongArray(ServerProfile.SplitPorts(p.KillswitchAllowPorts)),
             ["post_quantum_group_enabled"] = p.PostQuantumGroupEnabled,
-            ["exclusions"] = ToArray(ServerProfile.SplitLines(p.Exclusions)),
-            ["dns_upstreams"] = ToArray(ServerProfile.SplitLines(p.DnsUpstreams)),
+            ["exclusions"]                 = ToStringArray(ServerProfile.SplitLines(p.Exclusions)),
+            ["dns_upstreams"]              = ToStringArray(ServerProfile.SplitLines(p.DnsUpstreams)),
         };
 
         var endpoint = new TomlTable
         {
-            ["hostname"] = p.Hostname,
-            ["addresses"] = ToArray(ServerProfile.SplitLines(p.Addresses)),
-            ["has_ipv6"] = p.HasIpv6,
-            ["username"] = p.Username,
-            ["password"] = p.Password,
-            ["client_random"] = p.ClientRandom,
-            ["skip_verification"] = p.SkipVerification,
-            ["certificate"] = p.Certificate,
-            ["upstream_protocol"] = p.UpstreamProtocol,
+            ["hostname"]                   = p.Hostname,
+            ["addresses"]                  = ToStringArray(ServerProfile.SplitLines(p.Addresses)),
+            ["has_ipv6"]                   = p.HasIpv6,
+            ["username"]                   = p.Username,
+            ["password"]                   = p.Password,
+            ["client_random"]              = p.ClientRandom,
+            ["skip_verification"]          = p.SkipVerification,
+            ["certificate"]                = p.Certificate,
+            ["upstream_protocol"]          = p.UpstreamProtocol,
             ["upstream_fallback_protocol"] = p.UpstreamFallbackProtocol,
-            ["anti_dpi"] = p.AntiDpi,
+            ["anti_dpi"]                   = p.AntiDpi,
         };
         root["endpoint"] = endpoint;
 
@@ -46,16 +47,16 @@ public static class ConfigService
         {
             listener["tun"] = new TomlTable
             {
-                ["bound_if"] = p.TunBoundIf,
-                ["included_routes"] = ToArray(ServerProfile.SplitLines(p.TunIncludedRoutes)),
-                ["excluded_routes"] = ToArray(ServerProfile.SplitLines(p.TunExcludedRoutes)),
+                ["bound_if"]        = p.TunBoundIf,
+                ["included_routes"] = ToStringArray(ServerProfile.SplitLines(p.TunIncludedRoutes)),
+                ["excluded_routes"] = ToStringArray(ServerProfile.SplitLines(p.TunExcludedRoutes)),
             };
         }
         if (p.Socks5Enabled)
         {
             listener["socks5"] = new TomlTable
             {
-                ["address"] = p.Socks5Address,
+                ["address"]  = p.Socks5Address,
                 ["username"] = p.Socks5Username,
                 ["password"] = p.Socks5Password,
             };
@@ -72,10 +73,14 @@ public static class ConfigService
         File.WriteAllText(path, ToToml(p));
     }
 
-    private static TomlArray ToArray<T>(System.Collections.Generic.IEnumerable<T> items)
-    {
-        var arr = new TomlArray();
-        foreach (var i in items) arr.Add(i!);
-        return arr;
-    }
+    // Use plain .NET arrays, NOT TomlArray.
+    // TomlArray inherits List<object?> — Add(string) resolves to Add(object?),
+    // so Tomlyn receives boxed objects and may serialise the whole array as one
+    // concatenated string instead of individual quoted elements.
+    // Passing string[] / long[] lets Tomlyn's own type detection handle
+    // serialisation correctly and guarantees ["a", "b", ...] output.
+
+    private static string[] ToStringArray(List<string> items) => items.ToArray();
+
+    private static long[] ToLongArray(List<int> items) => items.Select(i => (long)i).ToArray();
 }

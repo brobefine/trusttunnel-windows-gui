@@ -1,10 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using TrustTunnelGui.Models;
+using Microsoft.UI.Xaml.Input;
 using TrustTunnelGui.Services;
 
 namespace TrustTunnelGui.Views;
@@ -50,5 +49,17 @@ public sealed partial class SettingsPage : Page
             "TrustTunnelGui");
         Directory.CreateDirectory(dir);
         Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
+    }
+
+    // ── Smooth mouse-wheel scrolling (same pattern as ServerEditPage) ──────
+    private void MainScroll_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is not ScrollViewer sv) return;
+        var point = e.GetCurrentPoint(sv);
+        if (point.Properties.IsHorizontalMouseWheel) return;
+        var delta = point.Properties.MouseWheelDelta * 2.0;
+        var newOffset = Math.Clamp(sv.VerticalOffset - delta, 0, sv.ScrollableHeight);
+        sv.ChangeView(null, newOffset, null, disableAnimation: false);
+        e.Handled = true;
     }
 }

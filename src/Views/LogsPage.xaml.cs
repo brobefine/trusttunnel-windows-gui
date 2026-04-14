@@ -1,6 +1,5 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -19,7 +18,7 @@ public sealed partial class LogsPage : Page
     {
         InitializeComponent();
         LogList.ItemsSource = _lines;
-        Loaded += OnLoaded;
+        Loaded   += OnLoaded;
         Unloaded += (_, _) => App.Tunnel.LogReceived -= OnLog;
     }
 
@@ -29,28 +28,40 @@ public sealed partial class LogsPage : Page
         foreach (var line in App.Tunnel.Buffer) _lines.Add(line);
         App.Tunnel.LogReceived += OnLog;
 
-        _scroll = FindChild<ScrollViewer>(LogList);
-        ScrollToEnd();
+        // Wait for one layout pass so the ListView's internal ScrollViewer
+        // exists in the visual tree before we try to find it.
+        DispatcherQueue.TryEnqueue(
+            Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+            () =>
+            {
+                _scroll = FindChild<ScrollViewer>(LogList);
+                ScrollToEnd();
+            });
     }
 
     private void OnLog(string line) => Ui.Run(() =>
     {
         _lines.Add(line);
         while (_lines.Count > MaxLines) _lines.RemoveAt(0);
-
         if (AutoScroll.IsOn) ScrollToEnd();
     });
 
     private void ScrollToEnd()
     {
         if (_lines.Count == 0) return;
-        LogList.DispatcherQueue.TryEnqueue(
+
+        // Dispatch at Low priority so it runs after the ListView layout pass
+        // (Normal priority) that inserts the new item into the visual tree.
+        // Use double.MaxValue — WinUI 3 clamps it to ScrollableHeight, so we
+        // always land at the bottom even if ScrollableHeight hasn't been read
+        // yet in the current frame.
+        DispatcherQueue.TryEnqueue(
             Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
             () =>
             {
                 _scroll ??= FindChild<ScrollViewer>(LogList);
-                if (_scroll != null)
-                    _scroll.ChangeView(null, _scroll.ScrollableHeight, null, disableAnimation: true);
+                if (_scroll is not null)
+                    _scroll.ChangeView(null, double.MaxValue, null, disableAnimation: true);
                 else
                     LogList.ScrollIntoView(_lines[^1]);
             });
@@ -59,7 +70,7 @@ public sealed partial class LogsPage : Page
     private void Clear_Click(object sender, RoutedEventArgs e)
     {
         _lines.Clear();
-        while (App.Tunnel.Buffer.TryDequeue(out _)) { }
+        App.Tunnel.Buffer.Clear(); // ConcurrentQueue has Clear() in .NET 5+
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -79,7 +90,7 @@ public sealed partial class LogsPage : Page
             foreach (var l in _lines) sb.AppendLine(l);
             System.IO.File.WriteAllText(path, sb.ToString());
         }
-        catch { /* можно вывести InfoBar если есть */ }
+        catch { /* silently ignore — could add an InfoBar here */ }
     }
 
     private static T? FindChild<T>(DependencyObject parent) where T : DependencyObject

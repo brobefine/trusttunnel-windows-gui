@@ -15,9 +15,12 @@
                  IsClosable="True" IsOpen="False"/>
 
         <ScrollViewer Grid.Row="1"
+                      x:Name="MainScroll"
                       Background="Transparent"
                       CanContentRenderOutsideBounds="False"
-                      UseLayoutRounding="True">
+                      UseLayoutRounding="True"
+                      IsScrollInertiaEnabled="True"
+                      PointerWheelChanged="MainScroll_PointerWheelChanged">
             <Grid Padding="32,16,32,32" RowSpacing="16"
                   CacheMode="BitmapCache">
                 <Grid.RowDefinitions>
@@ -153,11 +156,11 @@
                                       ToolTipService.ToolTip="Включить системный VPN-туннель через виртуальный сетевой адаптер (wintun). Требует прав администратора и наличие wintun.dll рядом с исполняемым файлом."/>
                         <TextBox Header="Bound interface (опц.)" Text="{x:Bind P.TunBoundIf, Mode=TwoWay}"
                                  ToolTipService.ToolTip="Имя физического интерфейса, через который пускать соединения VPN-клиента к серверу. На Windows можно указать индекс интерфейса (как в выводе 'route print') строкой. Обычно оставить пустым — авто-определение."/>
-                        <TextBox Header="Маршруты включения (по одному)"
+                        <TextBox Header="Маршруты включения (по одному в строке)"
                                  Text="{x:Bind P.TunIncludedRoutes, Mode=TwoWay}"
                                  AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" FontFamily="Consolas"
                                  ToolTipService.ToolTip="CIDR-маршруты, которые направляются в TUN-интерфейс (то есть идут через VPN).&#x0a;По умолчанию: 0.0.0.0/0 и 2000::/3 — весь IPv4 и IPv6."/>
-                        <TextBox Header="Маршруты исключения (по одному)"
+                        <TextBox Header="Маршруты исключения (по одному в строке)"
                                  Text="{x:Bind P.TunExcludedRoutes, Mode=TwoWay}"
                                  AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" FontFamily="Consolas"
                                  ToolTipService.ToolTip="CIDR-маршруты в обход TUN-интерфейса (идут напрямую, без VPN).&#x0a;Стандартный набор для исключения локальных сетей и multicast:&#x0a;  0.0.0.0/8&#x0a;  10.0.0.0/8&#x0a;  169.254.0.0/16&#x0a;  172.16.0.0/12&#x0a;  192.168.0.0/16&#x0a;  224.0.0.0/3"/>

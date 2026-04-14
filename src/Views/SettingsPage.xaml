@@ -3,7 +3,9 @@
     x:Class="TrustTunnelGui.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ScrollViewer>
+    <ScrollViewer x:Name="MainScroll"
+                  IsScrollInertiaEnabled="True"
+                  PointerWheelChanged="MainScroll_PointerWheelChanged">
         <Grid Padding="32" RowSpacing="16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
