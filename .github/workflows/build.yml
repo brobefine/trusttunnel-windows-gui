@@ -24,54 +24,20 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # windows-latest ships .NET 10 which breaks MrtCore.PriGen.targets.
-      # Disable multi-level SDK lookup and point DOTNET_ROOT at the 8.x
-      # install that setup-dotnet placed in the runner tool cache.
+      # windows-latest has .NET 10 first in PATH which breaks MrtCore.PriGen.targets.
+      # setup-dotnet sets DOTNET_ROOT to the 8.x install — prepend it to PATH
+      # and disable multi-level lookup so all dotnet calls use 8.x only.
       - name: Force .NET 8 SDK
         shell: pwsh
         run: |
-          $sdk8 = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\dotnet\sdk" -Directory |
-                  Where-Object { $_.Name -like '8.*' } |
-                  Sort-Object Name -Descending |
-                  Select-Object -First 1
-          if (-not $sdk8) {
-            # Fallback: search in ProgramFiles
-            $sdk8 = Get-ChildItem "C:\Program Files\dotnet\sdk" -Directory |
-                    Where-Object { $_.Name -like '8.*' } |
-                    Sort-Object Name -Descending |
-                    Select-Object -First 1
-          }
-          if (-not $sdk8) {
-            # setup-dotnet puts it in the tool cache
-            $sdk8 = Get-ChildItem "$env:RUNNER_TOOL_CACHE\dotnet\*\x64" -Directory -ErrorAction SilentlyContinue |
-                    Where-Object { Test-Path "$($_.FullName)\sdk" } |
-                    Select-Object -First 1
-          }
-
-          # Find dotnet.exe that owns the 8.x SDK
-          $dotnetRoot = $null
-          foreach ($candidate in @(
-              "$env:LOCALAPPDATA\Microsoft\dotnet",
-              "C:\Program Files\dotnet",
-              "$env:ProgramFiles\dotnet"
-          )) {
-            if (Test-Path "$candidate\sdk") {
-              $has8 = Get-ChildItem "$candidate\sdk" -Directory | Where-Object { $_.Name -like '8.*' }
-              if ($has8) { $dotnetRoot = $candidate; break }
-            }
-          }
-
-          if (-not $dotnetRoot) {
-            Write-Error "Could not find a dotnet root with .NET 8 SDK installed"
+          Write-Host "DOTNET_ROOT: $env:DOTNET_ROOT"
+          if (-not $env:DOTNET_ROOT) {
+            Write-Error "DOTNET_ROOT not set by setup-dotnet"
             exit 1
           }
-
-          Write-Host "Using DOTNET_ROOT: $dotnetRoot"
-          echo "DOTNET_ROOT=$dotnetRoot"         >> $env:GITHUB_ENV
-          echo "DOTNET_MULTILEVEL_LOOKUP=0"      >> $env:GITHUB_ENV
-          echo "$dotnetRoot"                     >> $env:GITHUB_PATH
-
-          & "$dotnetRoot\dotnet.exe" --version
+          echo "DOTNET_MULTILEVEL_LOOKUP=0" >> $env:GITHUB_ENV
+          echo "$env:DOTNET_ROOT"           >> $env:GITHUB_PATH
+          & "$env:DOTNET_ROOT\dotnet.exe" --version
 
       - name: Restore
         working-directory: src
@@ -139,8 +105,8 @@ jobs:
           $pub = "src/bin/Release/net8.0-windows10.0.19041.0/win-${{ matrix.arch }}/publish"
           New-Item -ItemType Directory -Force -Path "release" | Out-Null
           Copy-Item "$pub/*" -Destination "release" -Recurse -Force
-          Copy-Item "wintun.dll"              -Destination "release/wintun.dll"
-          Copy-Item "trusttunnel_client.exe"  -Destination "release/trusttunnel_client.exe"
+          Copy-Item "wintun.dll"             -Destination "release/wintun.dll"
+          Copy-Item "trusttunnel_client.exe" -Destination "release/trusttunnel_client.exe"
 
       - name: Zip
         shell: pwsh
