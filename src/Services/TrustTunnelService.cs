@@ -161,24 +161,6 @@ public class TrustTunnelService
 
     // ── Misc ───────────────────────────────────────────────────────────────
 
-    public async Task<(int code, string output)> RunOnceAsync(string exePath, params string[] args)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = exePath,
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            UseShellExecute = false,
-            CreateNoWindow  = true,
-        };
-        foreach (var a in args) psi.ArgumentList.Add(a);
-        using var p = Process.Start(psi)!;
-        var stdout = await p.StandardOutput.ReadToEndAsync();
-        var stderr = await p.StandardError.ReadToEndAsync();
-        await p.WaitForExitAsync();
-        return (p.ExitCode, stdout + stderr);
-    }
-
     private void EmitLog(string line)
     {
         Buffer.Enqueue(line);

@@ -37,6 +37,19 @@ public sealed partial class ConnectionPage : Page
         App.Tunnel.StatusChanged += OnStatus;
         OnStatus(App.Tunnel.Status);
 
+        CheckBinaries();
+
+        if (AutoScroll.IsOn) ScrollToEnd();
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        App.Tunnel.LogReceived   -= OnLog;
+        App.Tunnel.StatusChanged -= OnStatus;
+    }
+
+    private void CheckBinaries()
+    {
         if (!App.Binaries.ClientExeExists)
         {
             WarnBar.IsOpen  = true;
@@ -49,14 +62,6 @@ public sealed partial class ConnectionPage : Page
             WarnBar.Title   = "Нет wintun.dll";
             WarnBar.Message = "TUN-листенер не запустится без wintun.dll";
         }
-
-        if (AutoScroll.IsOn) ScrollToEnd();
-    }
-
-    private void OnUnloaded(object sender, RoutedEventArgs e)
-    {
-        App.Tunnel.LogReceived   -= OnLog;
-        App.Tunnel.StatusChanged -= OnStatus;
     }
 
     // ── Logging ────────────────────────────────────────────────────────────
@@ -66,11 +71,14 @@ public sealed partial class ConnectionPage : Page
         _lines.Add(line);
         if (_lines.Count > MaxLines) _lines.RemoveAt(0);
 
-        LogBox.Text += line + "\n";
+        // Append text directly — avoid full rebuild on every line
+        LogText.Text += line + "\n";
+
+        // Trim from front when over cap
         if (_lines.Count >= MaxLines)
         {
-            var idx = LogBox.Text.IndexOf('\n');
-            if (idx >= 0) LogBox.Text = LogBox.Text[(idx + 1)..];
+            var idx = LogText.Text.IndexOf('\n');
+            if (idx >= 0) LogText.Text = LogText.Text[(idx + 1)..];
         }
 
         if (AutoScroll.IsOn) ScrollToEnd();
@@ -80,28 +88,21 @@ public sealed partial class ConnectionPage : Page
     {
         var sb = new StringBuilder();
         foreach (var l in _lines) sb.Append(l).Append('\n');
-        LogBox.Text = sb.ToString();
+        LogText.Text = sb.ToString();
     }
 
-    // Dispatch at Low priority so WinUI layout completes before we move caret.
-    // SelectionStart on a readonly TextBox reliably scrolls the content into view.
+    // ScrollViewer.ChangeView with double.MaxValue always lands at the bottom.
+    // Dispatched at Low priority so the TextBlock layout pass finishes first.
     private void ScrollToEnd()
     {
         DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
-        {
-            var len = LogBox.Text.Length;
-            if (len > 0)
-            {
-                LogBox.SelectionStart  = len;
-                LogBox.SelectionLength = 0;
-            }
-        });
+            LogScroll.ChangeView(null, double.MaxValue, null, disableAnimation: true));
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
     {
         _lines.Clear();
-        LogBox.Text = string.Empty;
+        LogText.Text = string.Empty;
         App.Tunnel.Buffer.Clear();
     }
 
@@ -113,7 +114,8 @@ public sealed partial class ConnectionPage : Page
             var path = Win32FileDialog.ShowSave(hwnd,
                 "Log file\0*.log\0Text file\0*.txt\0All files\0*.*\0\0",
                 "log", $"trusttunnel-{DateTime.Now:yyyyMMdd-HHmmss}.log");
-            if (!string.IsNullOrEmpty(path)) System.IO.File.WriteAllText(path, LogBox.Text);
+            if (!string.IsNullOrEmpty(path))
+                System.IO.File.WriteAllText(path, LogText.Text);
         }
         catch { }
     }

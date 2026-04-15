@@ -39,28 +39,41 @@ public static class ConfigService
         };
         root["endpoint"] = endpoint;
 
-        var listener = new TomlTable();
-        if (p.TunEnabled)
+        if (p.TunEnabled || p.Socks5Enabled)
         {
-            var tun = new TomlTable
+            var listener = new TomlTable();
+
+            // "type" discriminator tells the client which listener(s) are active
+            listener["type"] = (p.TunEnabled, p.Socks5Enabled) switch
             {
-                ["bound_if"]        = p.TunBoundIf,
-                ["included_routes"] = ToStringArray(ServerProfile.SplitLines(p.TunIncludedRoutes)),
-                ["excluded_routes"] = ToStringArray(ServerProfile.SplitLines(p.TunExcludedRoutes)),
+                (true,  false) => "tun",
+                (false, true)  => "socks5",
+                (true,  true)  => "tun_and_socks5",
+                _              => "tun",
             };
-            if (p.TunMtu > 0) tun["mtu"] = (long)p.TunMtu;
-            listener["tun"] = tun;
-        }
-        if (p.Socks5Enabled)
-        {
-            listener["socks5"] = new TomlTable
+
+            if (p.TunEnabled)
             {
-                ["address"]  = p.Socks5Address,
-                ["username"] = p.Socks5Username,
-                ["password"] = p.Socks5Password,
-            };
+                var tun = new TomlTable
+                {
+                    ["bound_if"]        = p.TunBoundIf,
+                    ["included_routes"] = ToStringArray(ServerProfile.SplitLines(p.TunIncludedRoutes)),
+                    ["excluded_routes"] = ToStringArray(ServerProfile.SplitLines(p.TunExcludedRoutes)),
+                };
+                if (p.TunMtu > 0) tun["mtu"] = (long)p.TunMtu;
+                listener["tun"] = tun;
+            }
+
+            if (p.Socks5Enabled)
+            {
+                var socks5 = new TomlTable { ["address"] = p.Socks5Address };
+                if (!string.IsNullOrEmpty(p.Socks5Username)) socks5["username"] = p.Socks5Username;
+                if (!string.IsNullOrEmpty(p.Socks5Password)) socks5["password"] = p.Socks5Password;
+                listener["socks5"] = socks5;
+            }
+
+            root["listener"] = listener;
         }
-        if (listener.Count > 0) root["listener"] = listener;
 
         return Toml.FromModel(root);
     }
@@ -72,10 +85,6 @@ public static class ConfigService
         File.WriteAllText(path, ToToml(p));
     }
 
-    /// <summary>
-    /// For each plain domain (no wildcard, no CIDR, no port, not an IP) also
-    /// emits "*.domain" so subdomains are covered automatically.
-    /// </summary>
     private static List<string> ExpandDomains(List<string> entries)
     {
         var result = new List<string>(entries.Count * 2);
@@ -93,7 +102,7 @@ public static class ConfigService
         return result;
     }
 
-    private static string[] ToStringArray(List<string> items)          => items.ToArray();
-    private static string[] ToStringArray(IEnumerable<string> items)   => items.ToArray();
-    private static long[]   ToLongArray(List<int> items)               => items.Select(i => (long)i).ToArray();
+    private static string[] ToStringArray(List<string> items)        => items.ToArray();
+    private static string[] ToStringArray(IEnumerable<string> items) => items.ToArray();
+    private static long[]   ToLongArray(List<int> items)             => items.Select(i => (long)i).ToArray();
 }
