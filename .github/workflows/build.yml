@@ -19,10 +19,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pin to .NET 8 — SDK 10 on windows-latest is missing the
+      # VisualStudio AppxPackage components that MrtCore.PriGen.targets needs.
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
+      # Make sure dotnet uses 8.x and not whatever else is on the runner
+      - name: Pin SDK via global.json
+        shell: pwsh
+        run: |
+          $v = dotnet --version
+          Write-Host "Active SDK: $v"
+          if (-not $v.StartsWith("8.")) {
+            Write-Error "Expected .NET 8, got $v"
+            exit 1
+          }
 
       - name: Restore
         working-directory: src
@@ -38,10 +51,6 @@ jobs:
           -p:Platform=${{ matrix.arch }}
           -p:WindowsAppSDKSelfContained=true
           -p:PublishSingleFile=false
-          -p:GenerateAppxPackageOnBuild=false
-          -p:AppxPackage=false
-          -p:UapAppxPackageBuildMode=None
-          -p:EnableMsixTooling=false
 
       - name: Download trusttunnel_client (latest official release)
         shell: pwsh
