@@ -256,7 +256,11 @@ public class TrustTunnelService
             UseShellExecute = false,
             CreateNoWindow  = true,
         };
-        psi.ArgumentList.AddRange(new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script });
+        psi.ArgumentList.Add("-NoProfile");
+        psi.ArgumentList.Add("-ExecutionPolicy");
+        psi.ArgumentList.Add("Bypass");
+        psi.ArgumentList.Add("-Command");
+        psi.ArgumentList.Add(script);
         using var p = Process.Start(psi)!;
         var output = (await p.StandardOutput.ReadToEndAsync()) + (await p.StandardError.ReadToEndAsync());
         await p.WaitForExitAsync();
