@@ -38,20 +38,21 @@ jobs:
           -p:Platform=${{ matrix.arch }}
           -p:WindowsAppSDKSelfContained=true
           -p:PublishSingleFile=false
+          -p:GenerateAppxPackageOnBuild=false
+          -p:AppxPackage=false
+          -p:UapAppxPackageBuildMode=None
+          -p:EnableMsixTooling=false
 
       - name: Download trusttunnel_client (latest official release)
         shell: pwsh
         run: |
           $arch = "${{ matrix.arch }}"
-          # GitHub API — последний релиз
           $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/TrustTunnel/TrustTunnelClient/releases/latest" `
                                    -Headers @{ "User-Agent" = "trusttunnel-gui-ci" }
           Write-Host "Release tag: $($rel.tag_name)"
           Write-Host "Available assets:"
           $rel.assets | ForEach-Object { Write-Host "  $($_.name)" }
 
-          # Подбираем Windows-ассет нужной арки.
-          # Паттерны заведомо широкие — поправь, когда увидишь реальные имена.
           $patterns = if ($arch -eq "x64") {
             @("windows.*x86_64", "windows.*amd64", "win.*x64", "win64")
           } else {
@@ -71,7 +72,6 @@ jobs:
           Write-Host "Downloading $($asset.name)..."
           Invoke-WebRequest -Uri $asset.browser_download_url -OutFile "tt-client.archive"
 
-          # Распаковка zip или tar.gz
           New-Item -ItemType Directory -Force -Path "tt-extract" | Out-Null
           if ($asset.name -match "\.zip$") {
             Expand-Archive -Path "tt-client.archive" -DestinationPath "tt-extract" -Force
@@ -82,7 +82,6 @@ jobs:
             exit 1
           }
 
-          # Найти trusttunnel_client.exe внутри
           $exe = Get-ChildItem -Path "tt-extract" -Recurse -Filter "trusttunnel_client.exe" | Select-Object -First 1
           if (-not $exe) {
             Write-Error "trusttunnel_client.exe not found in archive"

@@ -1,51 +1,55 @@
 using System;
 using System.Collections.Generic;
-using CommunityToolkit.Mvvm.ComponentModel;
 using System.Linq;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace TrustTunnelGui.Models;
 
+/// <summary>
+/// Mirrors trusttunnel_client.toml schema.
+/// Uses partial property syntax (CommunityToolkit 8.x) for WinUI 3 AOT compatibility.
+/// </summary>
 public partial class ServerProfile : ObservableObject
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    [ObservableProperty] private string name = "New server";
+    [ObservableProperty] public partial string Name { get; set; } = "New server";
 
     // Top-level
-    [ObservableProperty] private string logLevel  = "info";
-    [ObservableProperty] private string vpnMode   = "general";
-    [ObservableProperty] private bool   killswitchEnabled = true;
-    [ObservableProperty] private string killswitchAllowPorts = "";
-    [ObservableProperty] private bool   postQuantumGroupEnabled = true;
-    [ObservableProperty] private string exclusions   = "";
-    [ObservableProperty] private string dnsUpstreams = "tls://1.1.1.1";
+    [ObservableProperty] public partial string LogLevel  { get; set; } = "info";
+    [ObservableProperty] public partial string VpnMode   { get; set; } = "general";
+    [ObservableProperty] public partial bool   KillswitchEnabled      { get; set; } = true;
+    [ObservableProperty] public partial string KillswitchAllowPorts   { get; set; } = "";
+    [ObservableProperty] public partial bool   PostQuantumGroupEnabled { get; set; } = true;
+    [ObservableProperty] public partial string Exclusions   { get; set; } = "";
+    [ObservableProperty] public partial string DnsUpstreams { get; set; } = "tls://1.1.1.1";
 
     // [endpoint]
-    [ObservableProperty] private string hostname   = "";
-    [ObservableProperty] private string addresses  = "";
-    [ObservableProperty] private bool   hasIpv6    = true;
-    [ObservableProperty] private string username   = "";
-    [ObservableProperty] private string password   = "";
-    [ObservableProperty] private string clientRandom = "";
-    [ObservableProperty] private bool   skipVerification = false;
-    [ObservableProperty] private string certificate = "";
-    [ObservableProperty] private string upstreamProtocol = "http2";
-    [ObservableProperty] private string upstreamFallbackProtocol = "";
-    [ObservableProperty] private bool   antiDpi = false;
+    [ObservableProperty] public partial string Hostname   { get; set; } = "";
+    [ObservableProperty] public partial string Addresses  { get; set; } = "";
+    [ObservableProperty] public partial bool   HasIpv6    { get; set; } = true;
+    [ObservableProperty] public partial string Username   { get; set; } = "";
+    [ObservableProperty] public partial string Password   { get; set; } = "";
+    [ObservableProperty] public partial string ClientRandom       { get; set; } = "";
+    [ObservableProperty] public partial bool   SkipVerification   { get; set; } = false;
+    [ObservableProperty] public partial string Certificate        { get; set; } = "";
+    [ObservableProperty] public partial string UpstreamProtocol         { get; set; } = "http2";
+    [ObservableProperty] public partial string UpstreamFallbackProtocol { get; set; } = "";
+    [ObservableProperty] public partial bool   AntiDpi { get; set; } = false;
 
     // [listener.tun]
-    [ObservableProperty] private bool   tunEnabled = true;
-    [ObservableProperty] private string tunBoundIf = "";
-    [ObservableProperty] private string tunIncludedRoutes = "0.0.0.0/0\n2000::/3";
-    [ObservableProperty] private string tunExcludedRoutes = "";
+    [ObservableProperty] public partial bool   TunEnabled       { get; set; } = true;
+    [ObservableProperty] public partial string TunBoundIf       { get; set; } = "";
+    [ObservableProperty] public partial string TunIncludedRoutes { get; set; } = "0.0.0.0/0\n2000::/3";
+    [ObservableProperty] public partial string TunExcludedRoutes { get; set; } = "";
     /// <summary>MTU for the TUN interface. 0 = let trusttunnel choose default.</summary>
-    [ObservableProperty] private int    tunMtu = 0;
+    [ObservableProperty] public partial int    TunMtu { get; set; } = 0;
 
     // [listener.socks5]
-    [ObservableProperty] private bool   socks5Enabled  = false;
-    [ObservableProperty] private string socks5Address  = "127.0.0.1:1080";
-    [ObservableProperty] private string socks5Username = "";
-    [ObservableProperty] private string socks5Password = "";
+    [ObservableProperty] public partial bool   Socks5Enabled  { get; set; } = false;
+    [ObservableProperty] public partial string Socks5Address  { get; set; } = "127.0.0.1:1080";
+    [ObservableProperty] public partial string Socks5Username { get; set; } = "";
+    [ObservableProperty] public partial string Socks5Password { get; set; } = "";
 
     public static List<string> SplitLines(string s)
     {
