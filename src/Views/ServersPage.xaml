@@ -15,7 +15,10 @@
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
             <Button Content="Добавить" Click="Add_Click" Style="{ThemeResource AccentButtonStyle}"/>
-            <Button Content="Импорт TOML" Click="Import_Click"/>
+            <Button Content="Импорт TOML" Click="Import_Click"
+                    ToolTipService.ToolTip="Импортировать профиль из локального .toml файла"/>
+            <Button Content="Импорт по URL" Click="ImportUrl_Click"
+                    ToolTipService.ToolTip="Скачать и импортировать профиль по прямой ссылке на .toml (например raw GitHub или ссылка от сервера)"/>
         </StackPanel>
 
         <ListView Grid.Row="2" x:Name="List" SelectionMode="None">
@@ -40,7 +43,7 @@
                                 <TextBlock Text="{x:Bind Hostname, Mode=OneWay}" Opacity="0.6" FontSize="12"/>
                             </StackPanel>
                             <Button Grid.Column="1" Content="Изменить" Tag="{x:Bind}" Click="Edit_Click"/>
-                            <Button Grid.Column="2" Content="Удалить" Tag="{x:Bind}" Click="Delete_Click"/>
+                            <Button Grid.Column="2" Content="Удалить"  Tag="{x:Bind}" Click="Delete_Click"/>
                         </Grid>
                     </Border>
                 </DataTemplate>

@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using TrustTunnelGui.Models;
 using TrustTunnelGui.Services;
@@ -28,27 +27,6 @@ public sealed partial class ServerEditPage : Page
             if (found != null) P = found;
         }
         Bindings.Update();
-    }
-
-    // ── Smooth mouse-wheel scrolling ───────────────────────────────────────
-    // WinUI 3's ScrollViewer already does smooth touch/trackpad scrolling via
-    // the compositor, but mouse wheel by default jumps in large chunks.
-    // We intercept the wheel event and call ChangeView with animation enabled
-    // to get the same smooth behaviour for mouse users.
-    private void MainScroll_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
-    {
-        if (sender is not ScrollViewer sv) return;
-
-        var point = e.GetCurrentPoint(sv);
-        if (point.Properties.IsHorizontalMouseWheel) return; // let horizontal pass through
-
-        // MouseWheelDelta: positive = scroll up, negative = scroll down
-        // Typical value per notch: ±120. We use 2× as pixel step so one
-        // notch scrolls ~240 px — feels natural for a settings page.
-        var delta = point.Properties.MouseWheelDelta * 2.0;
-        var newOffset = Math.Clamp(sv.VerticalOffset - delta, 0, sv.ScrollableHeight);
-        sv.ChangeView(null, newOffset, null, disableAnimation: false);
-        e.Handled = true;
     }
 
     // ── Toolbar buttons ───────────────────────────────────────────────────

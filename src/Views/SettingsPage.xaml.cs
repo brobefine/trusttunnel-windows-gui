@@ -1,15 +1,18 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using TrustTunnelGui.Services;
 
 namespace TrustTunnelGui.Views;
 
 public sealed partial class SettingsPage : Page
 {
+    private ReleaseInfo? _pendingRelease;
+    private CancellationTokenSource? _updateCts;
+
     public SettingsPage()
     {
         InitializeComponent();
@@ -31,14 +34,9 @@ public sealed partial class SettingsPage : Page
         else                       AutoStartService.DisableAutostart();
     }
 
-    private void AutoConnect_Toggled(object sender, RoutedEventArgs e)
-        => AutoStartService.AutoConnect = AutoConnectToggle.IsOn;
-
-    private void StartHidden_Toggled(object sender, RoutedEventArgs e)
-        => AutoStartService.StartHidden = StartHiddenToggle.IsOn;
-
-    private void ResetAdapter_Toggled(object sender, RoutedEventArgs e)
-        => AutoStartService.ResetAdapterOnConnect = ResetAdapterToggle.IsOn;
+    private void AutoConnect_Toggled(object sender, RoutedEventArgs e) => AutoStartService.AutoConnect = AutoConnectToggle.IsOn;
+    private void StartHidden_Toggled(object sender, RoutedEventArgs e) => AutoStartService.StartHidden = StartHiddenToggle.IsOn;
+    private void ResetAdapter_Toggled(object sender, RoutedEventArgs e) => AutoStartService.ResetAdapterOnConnect = ResetAdapterToggle.IsOn;
 
     private void Refresh()
     {
@@ -48,21 +46,97 @@ public sealed partial class SettingsPage : Page
 
     private void OpenConfigs_Click(object sender, RoutedEventArgs e)
     {
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "TrustTunnelGui");
+        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TrustTunnelGui");
         Directory.CreateDirectory(dir);
         Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
     }
 
-    private void MainScroll_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    // ── Updates ────────────────────────────────────────────────────────────
+
+    private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not ScrollViewer sv) return;
-        var point = e.GetCurrentPoint(sv);
-        if (point.Properties.IsHorizontalMouseWheel) return;
-        var delta = point.Properties.MouseWheelDelta * 2.0;
-        var newOffset = Math.Clamp(sv.VerticalOffset - delta, 0, sv.ScrollableHeight);
-        sv.ChangeView(null, newOffset, null, disableAnimation: false);
-        e.Handled = true;
+        CheckUpdateBtn.IsEnabled = false;
+        UpdateBar.IsOpen = false;
+        SetInfo("Проверка обновлений...", InfoBarSeverity.Informational);
+
+        _pendingRelease = await UpdateService.GetLatestClientReleaseAsync();
+
+        if (_pendingRelease == null)
+        {
+            SetInfo("Не удалось получить информацию о релизах. Проверьте интернет-соединение.", InfoBarSeverity.Warning);
+        }
+        else
+        {
+            SetInfo($"Последняя версия: {_pendingRelease.TagName}  ({_pendingRelease.AssetName})", InfoBarSeverity.Success);
+            UpdateClientBtn.IsEnabled = true;
+        }
+        CheckUpdateBtn.IsEnabled = true;
+    }
+
+    private async void UpdateClient_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pendingRelease == null) return;
+        if (App.Tunnel.IsRunning)
+        {
+            SetInfo("Остановите VPN перед обновлением.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        SetBusy(true);
+        _updateCts = new CancellationTokenSource();
+
+        try
+        {
+            var progress = new Progress<double>(v => UpdateProgress.Value = v * 100);
+            var path = await UpdateService.UpdateClientAsync(
+                _pendingRelease, App.Binaries.AppDir, progress, _updateCts.Token);
+            SetInfo($"Обновлено: {path}", InfoBarSeverity.Success);
+            Refresh();
+            UpdateClientBtn.IsEnabled = false;
+        }
+        catch (OperationCanceledException)
+        {
+            SetInfo("Обновление отменено.", InfoBarSeverity.Informational);
+        }
+        catch (Exception ex)
+        {
+            SetInfo($"Ошибка: {ex.Message}", InfoBarSeverity.Error);
+        }
+        finally { SetBusy(false); }
+    }
+
+    private async void UpdateWintun_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Tunnel.IsRunning)
+        {
+            SetInfo("Остановите VPN перед обновлением wintun.", InfoBarSeverity.Warning);
+            return;
+        }
+        SetBusy(true);
+        try
+        {
+            var progress = new Progress<double>(v => UpdateProgress.Value = v * 100);
+            var path = await UpdateService.UpdateWintunAsync(App.Binaries.AppDir, progress);
+            SetInfo($"wintun обновлён: {path}", InfoBarSeverity.Success);
+            Refresh();
+        }
+        catch (Exception ex) { SetInfo($"Ошибка: {ex.Message}", InfoBarSeverity.Error); }
+        finally { SetBusy(false); }
+    }
+
+    private void SetInfo(string msg, InfoBarSeverity severity)
+    {
+        UpdateBar.Message  = msg;
+        UpdateBar.Severity = severity;
+        UpdateBar.IsOpen   = true;
+    }
+
+    private void SetBusy(bool busy)
+    {
+        CheckUpdateBtn.IsEnabled  = !busy;
+        UpdateClientBtn.IsEnabled = !busy;
+        UpdateWintunBtn.IsEnabled = !busy;
+        UpdateProgress.Value      = 0;
+        UpdateProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
     }
 }

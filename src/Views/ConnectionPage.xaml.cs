@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.UI;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -28,7 +29,6 @@ public sealed partial class ConnectionPage : Page
         ProfileBox.ItemsSource  = App.Profiles.Profiles;
         ProfileBox.SelectedItem = App.Profiles.Active ?? App.Profiles.Profiles.FirstOrDefault();
 
-        // Populate log from buffer
         _lines.Clear();
         foreach (var line in App.Tunnel.Buffer) _lines.Add(line);
         RebuildLogText();
@@ -67,8 +67,7 @@ public sealed partial class ConnectionPage : Page
         if (_lines.Count > MaxLines) _lines.RemoveAt(0);
 
         LogBox.Text += line + "\n";
-        // Keep TextBox in sync with the capped _lines list
-        if (_lines.Count == MaxLines)
+        if (_lines.Count >= MaxLines)
         {
             var idx = LogBox.Text.IndexOf('\n');
             if (idx >= 0) LogBox.Text = LogBox.Text[(idx + 1)..];
@@ -84,14 +83,19 @@ public sealed partial class ConnectionPage : Page
         LogBox.Text = sb.ToString();
     }
 
+    // Dispatch at Low priority so WinUI layout completes before we move caret.
+    // SelectionStart on a readonly TextBox reliably scrolls the content into view.
     private void ScrollToEnd()
     {
-        var len = LogBox.Text.Length;
-        if (len > 0)
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
-            LogBox.SelectionStart  = len;
-            LogBox.SelectionLength = 0;
-        }
+            var len = LogBox.Text.Length;
+            if (len > 0)
+            {
+                LogBox.SelectionStart  = len;
+                LogBox.SelectionLength = 0;
+            }
+        });
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
@@ -106,13 +110,10 @@ public sealed partial class ConnectionPage : Page
         try
         {
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-            var path = Win32FileDialog.ShowSave(
-                hwnd,
+            var path = Win32FileDialog.ShowSave(hwnd,
                 "Log file\0*.log\0Text file\0*.txt\0All files\0*.*\0\0",
-                "log",
-                $"trusttunnel-{DateTime.Now:yyyyMMdd-HHmmss}.log");
-            if (!string.IsNullOrEmpty(path))
-                System.IO.File.WriteAllText(path, LogBox.Text);
+                "log", $"trusttunnel-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+            if (!string.IsNullOrEmpty(path)) System.IO.File.WriteAllText(path, LogBox.Text);
         }
         catch { }
     }
@@ -121,7 +122,7 @@ public sealed partial class ConnectionPage : Page
 
     private void OnStatus(TunnelStatus s) => Ui.Run(() =>
     {
-        (StatusText.Text, var color, var enableConnect, var enableDisconnect) = s switch
+        (StatusText.Text, var color, var canConnect, var canDisconnect) = s switch
         {
             TunnelStatus.Stopped  => ("Отключено",    Colors.Gray,      true,  false),
             TunnelStatus.Starting => ("Запуск...",    Colors.Orange,    false, false),
@@ -131,8 +132,8 @@ public sealed partial class ConnectionPage : Page
             _                     => ("?",            Colors.Gray,      true,  false)
         };
         StatusIcon.Foreground   = new SolidColorBrush(color);
-        ConnectBtn.IsEnabled    = enableConnect && ProfileBox.SelectedItem != null;
-        DisconnectBtn.IsEnabled = enableDisconnect;
+        ConnectBtn.IsEnabled    = canConnect && ProfileBox.SelectedItem != null;
+        DisconnectBtn.IsEnabled = canDisconnect;
     });
 
     private void ProfileBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -153,21 +154,12 @@ public sealed partial class ConnectionPage : Page
             ConfigService.Save(p, path);
             await App.Tunnel.StartAsync(App.Binaries.ClientExePath, path);
         }
-        catch (Exception ex)
-        {
-            App.Tunnel.Buffer.Enqueue($"[gui] Connect error: {ex.Message}");
-        }
+        catch (Exception ex) { App.Tunnel.Buffer.Enqueue($"[gui] Connect error: {ex.Message}"); }
     }
 
     private async void Disconnect_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            await App.Tunnel.StopAsync();
-        }
-        catch (Exception ex)
-        {
-            App.Tunnel.Buffer.Enqueue($"[gui] Disconnect error: {ex.Message}");
-        }
+        try { await App.Tunnel.StopAsync(); }
+        catch (Exception ex) { App.Tunnel.Buffer.Enqueue($"[gui] Disconnect error: {ex.Message}"); }
     }
 }

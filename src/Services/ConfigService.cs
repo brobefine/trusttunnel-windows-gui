@@ -42,12 +42,14 @@ public static class ConfigService
         var listener = new TomlTable();
         if (p.TunEnabled)
         {
-            listener["tun"] = new TomlTable
+            var tun = new TomlTable
             {
                 ["bound_if"]        = p.TunBoundIf,
                 ["included_routes"] = ToStringArray(ServerProfile.SplitLines(p.TunIncludedRoutes)),
                 ["excluded_routes"] = ToStringArray(ServerProfile.SplitLines(p.TunExcludedRoutes)),
             };
+            if (p.TunMtu > 0) tun["mtu"] = (long)p.TunMtu;
+            listener["tun"] = tun;
         }
         if (p.Socks5Enabled)
         {
@@ -71,37 +73,27 @@ public static class ConfigService
     }
 
     /// <summary>
-    /// For each plain domain like "yandex.ru" also emits "*.yandex.ru"
-    /// so both the apex domain and all subdomains are covered.
-    /// Wildcards, IPs, CIDRs and host:port entries are passed through as-is.
+    /// For each plain domain (no wildcard, no CIDR, no port, not an IP) also
+    /// emits "*.domain" so subdomains are covered automatically.
     /// </summary>
     private static List<string> ExpandDomains(List<string> entries)
     {
         var result = new List<string>(entries.Count * 2);
         var seen   = new HashSet<string>();
-
         foreach (var entry in entries)
         {
-            if (seen.Add(entry))
-                result.Add(entry);
-
-            // Only expand bare hostnames: no wildcard, no slash (CIDR),
-            // no colon (IPv6 or host:port), not a raw IPv4, must have a dot.
-            if (!entry.StartsWith('*')
-                && !entry.Contains('/')
-                && !entry.Contains(':')
-                && entry.Contains('.')
-                && !IPAddress.TryParse(entry, out _))
+            if (seen.Add(entry)) result.Add(entry);
+            if (!entry.StartsWith('*') && !entry.Contains('/') && !entry.Contains(':')
+                && entry.Contains('.') && !IPAddress.TryParse(entry, out _))
             {
-                var wildcard = "*." + entry;
-                if (seen.Add(wildcard))
-                    result.Add(wildcard);
+                var w = "*." + entry;
+                if (seen.Add(w)) result.Add(w);
             }
         }
         return result;
     }
 
-    private static string[] ToStringArray(List<string> items) => items.ToArray();
-    private static string[] ToStringArray(IEnumerable<string> items) => items.ToArray();
-    private static long[]   ToLongArray(List<int> items) => items.Select(i => (long)i).ToArray();
+    private static string[] ToStringArray(List<string> items)          => items.ToArray();
+    private static string[] ToStringArray(IEnumerable<string> items)   => items.ToArray();
+    private static long[]   ToLongArray(List<int> items)               => items.Select(i => (long)i).ToArray();
 }

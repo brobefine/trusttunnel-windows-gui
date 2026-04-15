@@ -15,12 +15,10 @@
                  IsClosable="True" IsOpen="False"/>
 
         <ScrollViewer Grid.Row="1"
-                      x:Name="MainScroll"
                       Background="Transparent"
                       CanContentRenderOutsideBounds="False"
                       UseLayoutRounding="True"
-                      IsScrollInertiaEnabled="True"
-                      PointerWheelChanged="MainScroll_PointerWheelChanged">
+                      IsScrollInertiaEnabled="True">
             <Grid Padding="32,16,32,32" RowSpacing="16"
                   CacheMode="BitmapCache">
                 <Grid.RowDefinitions>
@@ -164,6 +162,9 @@
                                  Text="{x:Bind P.TunExcludedRoutes, Mode=TwoWay}"
                                  AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" FontFamily="Consolas"
                                  ToolTipService.ToolTip="CIDR-маршруты в обход TUN-интерфейса (идут напрямую, без VPN).&#x0a;Стандартный набор для исключения локальных сетей и multicast:&#x0a;  0.0.0.0/8&#x0a;  10.0.0.0/8&#x0a;  169.254.0.0/16&#x0a;  172.16.0.0/12&#x0a;  192.168.0.0/16&#x0a;  224.0.0.0/3"/>
+                        <NumberBox Header="MTU (0 = авто)" Value="{x:Bind P.TunMtu, Mode=TwoWay}"
+                                   Minimum="0" Maximum="9000" SmallChange="1" LargeChange="100" SpinButtonPlacementMode="Compact"
+                                   ToolTipService.ToolTip="MTU виртуального TUN-адаптера. 0 — пусть trusttunnel выберет сам (обычно 1500 или меньше). Уменьши до 1380-1420 если видишь фрагментацию или проблемы с большими пакетами."/>
                     </StackPanel>
                 </Expander>
 
