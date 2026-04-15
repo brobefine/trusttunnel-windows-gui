@@ -19,23 +19,59 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Pin to .NET 8 — SDK 10 on windows-latest is missing the
-      # VisualStudio AppxPackage components that MrtCore.PriGen.targets needs.
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      # Make sure dotnet uses 8.x and not whatever else is on the runner
-      - name: Pin SDK via global.json
+      # windows-latest ships .NET 10 which breaks MrtCore.PriGen.targets.
+      # Disable multi-level SDK lookup and point DOTNET_ROOT at the 8.x
+      # install that setup-dotnet placed in the runner tool cache.
+      - name: Force .NET 8 SDK
         shell: pwsh
         run: |
-          $v = dotnet --version
-          Write-Host "Active SDK: $v"
-          if (-not $v.StartsWith("8.")) {
-            Write-Error "Expected .NET 8, got $v"
+          $sdk8 = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\dotnet\sdk" -Directory |
+                  Where-Object { $_.Name -like '8.*' } |
+                  Sort-Object Name -Descending |
+                  Select-Object -First 1
+          if (-not $sdk8) {
+            # Fallback: search in ProgramFiles
+            $sdk8 = Get-ChildItem "C:\Program Files\dotnet\sdk" -Directory |
+                    Where-Object { $_.Name -like '8.*' } |
+                    Sort-Object Name -Descending |
+                    Select-Object -First 1
+          }
+          if (-not $sdk8) {
+            # setup-dotnet puts it in the tool cache
+            $sdk8 = Get-ChildItem "$env:RUNNER_TOOL_CACHE\dotnet\*\x64" -Directory -ErrorAction SilentlyContinue |
+                    Where-Object { Test-Path "$($_.FullName)\sdk" } |
+                    Select-Object -First 1
+          }
+
+          # Find dotnet.exe that owns the 8.x SDK
+          $dotnetRoot = $null
+          foreach ($candidate in @(
+              "$env:LOCALAPPDATA\Microsoft\dotnet",
+              "C:\Program Files\dotnet",
+              "$env:ProgramFiles\dotnet"
+          )) {
+            if (Test-Path "$candidate\sdk") {
+              $has8 = Get-ChildItem "$candidate\sdk" -Directory | Where-Object { $_.Name -like '8.*' }
+              if ($has8) { $dotnetRoot = $candidate; break }
+            }
+          }
+
+          if (-not $dotnetRoot) {
+            Write-Error "Could not find a dotnet root with .NET 8 SDK installed"
             exit 1
           }
+
+          Write-Host "Using DOTNET_ROOT: $dotnetRoot"
+          echo "DOTNET_ROOT=$dotnetRoot"         >> $env:GITHUB_ENV
+          echo "DOTNET_MULTILEVEL_LOOKUP=0"      >> $env:GITHUB_ENV
+          echo "$dotnetRoot"                     >> $env:GITHUB_PATH
+
+          & "$dotnetRoot\dotnet.exe" --version
 
       - name: Restore
         working-directory: src
@@ -59,7 +95,6 @@ jobs:
           $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/TrustTunnel/TrustTunnelClient/releases/latest" `
                                    -Headers @{ "User-Agent" = "trusttunnel-gui-ci" }
           Write-Host "Release tag: $($rel.tag_name)"
-          Write-Host "Available assets:"
           $rel.assets | ForEach-Object { Write-Host "  $($_.name)" }
 
           $patterns = if ($arch -eq "x64") {
@@ -73,29 +108,20 @@ jobs:
             $asset = $rel.assets | Where-Object { $_.name -match $p } | Select-Object -First 1
             if ($asset) { break }
           }
-          if (-not $asset) {
-            Write-Error "No Windows $arch asset matched. Adjust patterns in workflow."
-            exit 1
-          }
+          if (-not $asset) { Write-Error "No Windows $arch asset matched"; exit 1 }
 
-          Write-Host "Downloading $($asset.name)..."
           Invoke-WebRequest -Uri $asset.browser_download_url -OutFile "tt-client.archive"
-
           New-Item -ItemType Directory -Force -Path "tt-extract" | Out-Null
           if ($asset.name -match "\.zip$") {
             Expand-Archive -Path "tt-client.archive" -DestinationPath "tt-extract" -Force
           } elseif ($asset.name -match "\.tar\.gz$|\.tgz$") {
             tar -xzf "tt-client.archive" -C "tt-extract"
-          } else {
-            Write-Error "Unknown archive format: $($asset.name)"
-            exit 1
-          }
+          } else { Write-Error "Unknown archive format"; exit 1 }
 
           $exe = Get-ChildItem -Path "tt-extract" -Recurse -Filter "trusttunnel_client.exe" | Select-Object -First 1
           if (-not $exe) {
-            Write-Error "trusttunnel_client.exe not found in archive"
             Get-ChildItem -Path "tt-extract" -Recurse | Select-Object FullName
-            exit 1
+            Write-Error "trusttunnel_client.exe not found in archive"; exit 1
           }
           Copy-Item $exe.FullName -Destination "trusttunnel_client.exe" -Force
 
@@ -113,14 +139,13 @@ jobs:
           $pub = "src/bin/Release/net8.0-windows10.0.19041.0/win-${{ matrix.arch }}/publish"
           New-Item -ItemType Directory -Force -Path "release" | Out-Null
           Copy-Item "$pub/*" -Destination "release" -Recurse -Force
-          Copy-Item "wintun.dll" -Destination "release/wintun.dll"
-          Copy-Item "trusttunnel_client.exe" -Destination "release/trusttunnel_client.exe"
+          Copy-Item "wintun.dll"              -Destination "release/wintun.dll"
+          Copy-Item "trusttunnel_client.exe"  -Destination "release/trusttunnel_client.exe"
 
       - name: Zip
         shell: pwsh
         run: |
-          $zip = "TrustTunnelGui-${{ matrix.arch }}.zip"
-          Compress-Archive -Path "release/*" -DestinationPath $zip -Force
+          Compress-Archive -Path "release/*" -DestinationPath "TrustTunnelGui-${{ matrix.arch }}.zip" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -139,7 +164,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
